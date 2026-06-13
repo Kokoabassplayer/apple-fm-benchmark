@@ -17,8 +17,8 @@ can re-measure it on yours.
 | **Prefill** (reads prompt) | ~967 tok/s | slope of TTFT vs input length |
 | **Decode** (writes answer) | ~71 tok/s | slope of wall-time vs output length |
 | **Warm first-token** | ~0.42 s | median, short output |
-| **Cold first-token** | ~2.55 s | first call (model load) |
-| **Network privacy** | 0 model-related processes observed | differential en0 bytes + nettop, during a 24s generation |
+| **Cold first-token** | ~2.44 s | first call (model load) |
+| **Network privacy** | 0 model-related processes observed | differential en0 bytes + nettop, during a 23s generation |
 | **GSM8K / HumanEval / MMLU** | see dashboard | standard open suites |
 
 A single "tokens/sec" number is misleading, so we report **two** speeds (prefill
