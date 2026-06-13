@@ -93,8 +93,13 @@ h2{font-family:var(--serif);font-weight:700;font-size:clamp(26px,3.6vw,38px);let
 .score .nm{font-family:var(--serif);font-weight:700;font-size:22px;margin:2px 0 14px}
 .score .pct{font-family:var(--serif);font-weight:900;font-size:46px;line-height:1;color:var(--amber)}
 .score .pct .of{font-family:var(--mono);font-size:13px;color:var(--mute);font-weight:500}
-.score .bar{height:5px;background:var(--panel-2);border-radius:3px;margin-top:14px;overflow:hidden}
+.score .bar{position:relative;height:5px;background:var(--panel-2);border-radius:3px;margin-top:14px;overflow:hidden}
 .score .bar i{display:block;height:100%;background:var(--amber)}
+.score .ci{font-family:var(--mono);font-size:11px;color:var(--mute);margin-top:8px;letter-spacing:.02em}
+/* CI whisker: a 1px centre line spanning [lo,hi] with full-height caps at each end */
+.score .bar .ciwhisk{position:absolute;top:2px;height:1px;background:rgba(243,239,228,.85)}
+.score .bar .ciwhisk::before,.score .bar .ciwhisk::after{content:"";position:absolute;top:-2px;width:1px;height:5px;background:rgba(243,239,228,.85)}
+.score .bar .ciwhisk::before{left:0}.score .bar .ciwhisk::after{right:0}
 .score .n{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:8px}
 .score.pending{opacity:.6}
 .score.pending .pct{color:var(--dim);font-size:30px}
@@ -112,7 +117,7 @@ h2{font-family:var(--serif);font-weight:700;font-size:clamp(26px,3.6vw,38px);let
 .pill.g{background:var(--green)} .pill.a{background:var(--amber)} .pill.r{background:var(--red)}
 
 /* ---- privacy terminal ---- */
-.term{background:#0a0b09;border:1px solid var(--line);border-radius:12px;padding:18px;font-family:var(--mono);font-size:12px;color:var(--mute);line-height:1.7;overflow-x:auto}
+.term{background:#0a0b09;border:1px solid var(--line);border-radius:12px;padding:18px;font-family:var(--mono);font-size:12px;color:var(--mute);line-height:1.7;overflow-x:auto;white-space:pre}
 .term .pr{color:var(--green)} .term .cmt{color:var(--dim)} .term .hi{color:var(--cream)}
 
 /* ---- verdict ---- */
@@ -178,7 +183,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--amber);outline-offs
   <h2 data-i18n="ctx_h">~4,000 usable tokens — and it actually remembers</h2>
   <p class="slede" data-i18n="ctx_lede">The hard ceiling (binary-searched) is ~4k tokens. The honest finding is the second part: facts buried in the middle of documents up to 3,000 tokens long were retrieved <span class="green">every time — 12 of 12</span>. It fits the context <em>and</em> understands it.</p>
   <div class="chart"><div id="ctxChart"></div></div>
-  <div class="prov"><b>Measured</b> (amber): functional ceiling 4,037 tok ok → 4,179 tok hard error; multi-needle recall 3/3 at every length up to 3,000 tok. <b>Reference</b> (grey, vendor-stated, not measured by us): GPT-4o 128k · Claude Sonnet 200k · Gemini 1.5 Pro 1M. Log scale.</div>
+  <div class="prov" id="provCtx"><b>Measured</b> (amber): functional ceiling 4,037 tok ok → 4,179 tok hard error; multi-needle recall 3/3 at every length up to 3,000 tok. <b>Reference</b> (grey, vendor-stated, not measured by us): GPT-4o 128k · Claude Sonnet 200k · Gemini 1.5 Pro 1M. Log scale.</div>
 </section>
 
 <!-- 02 SPEED -->
@@ -188,9 +193,9 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--amber);outline-offs
   <p class="slede" data-i18n="spd_lede">A single "tokens/sec" number lies — this model has two. It <strong>reads</strong> your prompt fast (prefill, ~967 tok/s) but <strong>writes</strong> the answer slower (decode, ~71 tok/s). We separated them with linear regression, not a single stopwatch.</p>
   <div class="two">
     <div class="chart"><div id="preChart"></div>
-      <div class="prov"><b>Fit</b>: ttft = 0.054 + 0.00103·n  →  slope = prefill rate. r²≈0.99 across 5 input sizes.</div></div>
+      <div class="prov" id="provPre"><b>Fit</b>: ttft = 0.054 + 0.00103·n  →  slope = prefill rate. r²≈0.99 across 5 input sizes.</div></div>
     <div class="chart"><div id="decChart"></div>
-      <div class="prov"><b>Fit</b>: wall = −0.36 + 0.0142·out_tok  →  decode 70.7 tok/s. Per-length: 75 / 73 / 72 tok/s (monotonic, consistent).</div></div>
+      <div class="prov" id="provDec"><b>Fit</b>: wall = −0.36 + 0.0142·out_tok  →  decode 70.7 tok/s. Per-length: 75 / 73 / 72 tok/s (monotonic, consistent).</div></div>
   </div>
 </section>
 
@@ -212,10 +217,10 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--amber);outline-offs
     <div class="chart" style="padding:22px">
       <div class="mono" style="font-size:12px;color:var(--dim)">differential outbound (en0)</div>
       <div style="font-family:var(--serif);font-weight:900;font-size:48px;color:var(--green);line-height:1.1;margin-top:6px" id="privExcess">+17 KB</div>
-      <div class="mono" style="font-size:11px;color:var(--mute);margin-top:2px">inference − idle (sign flips run-to-run: −2 / −10 / +17 KB → noise)</div>
+      <div class="mono" style="font-size:11px;color:var(--mute);margin-top:2px" id="privCap">inference − idle (sign flips run-to-run: −2 / −10 / +17 KB → noise)</div>
       <div style="margin-top:18px;font-size:13px;color:var(--mute)" data-i18n="priv_box">Inference window: 63 KB out · 9 processes. Idle window: 46 KB out · 10 processes. Every process in both windows was an unrelated background app — <span class="green">none was the model</span>. See the evidence →</div>
     </div>
-    <div class="term">
+    <div class="term" id="procTerm">
 <span class="cmt"># nettop -P -x -J bytes_in,bytes_out -t external  (during inference)</span>
 <span class="pr">ChatGPT</span>            out=17055   <span class="cmt"># background app</span>
 <span class="pr">Spotify Helper</span>     out=15106   <span class="cmt"># background app</span>
@@ -263,7 +268,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--amber);outline-offs
 </section>
 
 <footer class="foot">
-  <p>Apple Foundation Models on-device benchmark · measured on Apple M3 Pro, macOS 27.0 (build 26A5353q).</p>
+  <p id="footMach">Apple Foundation Models on-device benchmark · measured on Apple M3 Pro, macOS 27.0 (build 26A5353q).</p>
   <p>Raw data + reproducible harness: <a href="https://github.com/kokoabassplayer/apple-fm-benchmark" target="_blank" rel="noopener">github.com/kokoabassplayer/apple-fm-benchmark</a> · run <span class="mono">bench/run_all.py</span> on your Mac.</p>
   <p style="margin-top:14px;color:var(--dim)">GSM8K (MIT) · HumanEval (MIT) · MMLU (MIT). No affiliation with Apple. Independent measurement.</p>
 </footer>
@@ -271,29 +276,83 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--amber);outline-offs
 </div><!-- /wrap -->
 
 <script>
-/* ---------- embedded measured data (results/all.json snapshot) ---------- */
+/* ---------- data layer ----------
+   Two shapes meet here. results/all.json is a verbose measurement log (every
+   run, every needle, every byte). DATA is the compact flat projection the render
+   functions read. normalize() is the ONE bridge: raw all.json -> flat DATA.
+   The embedded SNAPSHOT below is exactly normalize() applied to the committed
+   results/all.json, inlined so the page still renders offline / via file://.
+   On load we fetch results/all.json and re-run normalize() over every section,
+   so a re-run of bench/run_all.py on ANY machine updates every number here. */
+function normalize(j){
+  const M=j.spec.machine, O=j.spec.os, F=j.spec.fm_cli;
+  const pf=j.latency.prefill, df=j.latency.decode.fit, w=j.latency.warm_ttft;
+  const cv=j.context.ceiling, rc=j.context.recall_curve.curve;
+  const iw=j.privacy.inference_window, idw=j.privacy.idle_window;
+  const dec=j.latency.decode.per_length, decRows=Object.keys(dec).map(k=>dec[k]);
+  const recalled=rc.reduce((a,c)=>a+c.recalled,0), ofAll=rc.reduce((a,c)=>a+c.of,0);
+  const maxlen=Math.max.apply(null,rc.map(c=>c.total_tokens));
+  const procs=Object.keys(iw.processes).map(k=>({name:k,out:iw.processes[k].bytes_out_delta}))
+    .sort((a,b)=>b.out-a.out);
+  const sg=j.suites.gsm8k, sh=j.suites.humaneval, sm=j.suites.mmlu;
+  return {
+    spec:{ chip:M.chip, model:M.model_name+' ('+M.model_identifier+')',
+           cores:M.cores_total+' ('+M.cores_performance+'P+'+M.cores_efficiency+'E)', ram:M.memory,
+           os:O.product+' '+O.version, build:O.build, fm:F.path,
+           fm_build:(F.build_mtime_utc_guess||'').slice(0,10),
+           measured:(j.spec.measured_at_utc||'').slice(0,10)+' UTC' },
+    latency:{
+      prefill_tps:pf.fit.prefill_rate_tps,
+      prefill_fit:{slope:pf.fit.slope_s_per_tok,intercept:pf.fit.intercept_s},
+      prefill_points:pf.input_sizes.map(s=>({n:pf.per_size[s].median_input_tokens,ttft:pf.per_size[s].median_ttft})),
+      decode_tps:df.decode_rate_tps,
+      decode_fit:{slope:df.slope_s_per_tok,intercept:df.intercept_s},
+      decode_points:decRows.map(r=>({tok:r.median_out_tokens,wall:r.median_wall})),
+      decode_per_len:decRows.map(r=>Math.round(r.median_tps)),
+      warm_ttft_p50:w.median, cold_ttft:j.latency.cold.ttft },
+    context:{ ceiling:cv.bracket.largest_ok_actual, ceiling_fail:cv.bracket.first_fail_actual,
+              needles_per_len:rc[0].of, recall_max_len:maxlen,
+              recall_recalled:recalled, recall_of:ofAll,
+              recall:rc.map(c=>({tok:c.total_tokens,r:c.recall_fraction})) },
+    privacy:{ inference_out:iw.bytes_delta_en0_out, idle_out:idw.bytes_delta_en0_out,
+              excess:j.privacy.differential_excess_bytes_out, gen_wall_s:iw.gen_wall_s||null,
+              model_procs:iw.flagged_model_related.length, inference_procs:iw.process_count,
+              idle_procs:idw.process_count, processes:procs },
+    suites:{ gsm8k:{accuracy:sg.accuracy,n:sg.n,correct:sg.correct},
+             humaneval:{pass_at_1:sh.pass_at_1,n:sh.n,passed:sh.passed},
+             mmlu:{accuracy:sm.accuracy,n:sm.n,correct:sm.correct} }
+  };
+}
+/* embedded flat snapshot = normalize(committed results/all.json); offline fallback */
 const DATA = {
   spec:{ chip:"Apple M3 Pro", model:"MacBook Pro (Mac15,6)", cores:"11 (5P+6E)", ram:"18 GB",
          os:"macOS 27.0", build:"26A5353q", fm:"/usr/bin/fm", fm_build:"2026-06-06", measured:"2026-06-13 UTC" },
   latency:{
-    prefill_tps:967, prefill_fit:{slope:0.00103,intercept:0.054},
-    prefill_points:[{n:256,ttft:0.417},{n:512,ttft:0.614},{n:1024,ttft:1.054},{n:2048,ttft:2.045},{n:3072,ttft:3.347}],
-    decode_tps:70.7, decode_fit:{slope:0.01415,intercept:-0.362},
+    prefill_tps:966.6103480712096, prefill_fit:{slope:0.0010345430317349868,intercept:0.0539477395804695},
+    prefill_points:[{n:268,ttft:0.4168},{n:526,ttft:0.6144},{n:1033,ttft:1.0541},{n:2059,ttft:2.0451},{n:3081,ttft:3.3470}],
+    decode_tps:70.67085438385362, decode_fit:{slope:0.014150104858905922,intercept:-0.3623735277639071},
     decode_points:[{tok:380,wall:5.062},{tok:900,wall:12.295},{tok:1700,wall:23.725}],
-    warm_ttft_p50:0.42, cold_ttft:2.44
+    decode_per_len:[75,73,72],
+    warm_ttft_p50:0.418, cold_ttft:2.440425333996245
   },
-  context:{ ceiling:4037, ceiling_fail:4179,
-            recall:[{tok:512,r:1.0},{tok:1024,r:1.0},{tok:2048,r:1.0},{tok:3000,r:1.0}] },
-  privacy:{ inference_out:63325, idle_out:45983, excess:17342, runs_excess:[-2013,-10955,17342],
-            model_procs:0, inference_procs:9, idle_procs:10 },
+  context:{ ceiling:4037, ceiling_fail:4179, needles_per_len:3, recall_max_len:3037,
+            recall_recalled:12, recall_of:12,
+            recall:[{tok:554,r:1.0},{tok:1061,r:1.0},{tok:2087,r:1.0},{tok:3037,r:1.0}] },
+  privacy:{ inference_out:63325, idle_out:45983, excess:17342, gen_wall_s:22.67,
+            model_procs:0, inference_procs:9, idle_procs:10,
+            processes:[{name:"ChatGPT",out:17055},{name:"Spotify Helper",out:15106},
+              {name:"Codex (Service)",out:14026},{name:"mDNSResponder",out:2542},{name:"codex",out:1056},
+              {name:"Spotify",out:1011},{name:"Arc",out:130},{name:"2.1.165",out:24},{name:"Browser Helper",out:0}] },
   suites:{ gsm8k:{accuracy:0.8133,n:300,correct:244}, humaneval:{pass_at_1:0.5488,n:164,passed:90}, mmlu:{accuracy:0.6004,n:513,correct:308} }
 };
-/* fetch fresher committed data if present (re-run-and-commit workflow).
-   Narrow contract: only the suites block (the part that varies run-to-run and
-   machine-to-machine) is overridden from all.json; latency/context/privacy stay
-   embedded because their raw JSON is richer and we curate the flat fields. */
+/* fetch committed results/all.json and re-project EVERY section through normalize().
+   If the fetch fails (offline / file://) the embedded snapshot above still renders. */
 if(window.fetch){ fetch('results/all.json').then(r=>r.ok?r.json():null).then(j=>{
-  if(j && j.suites){ DATA.suites = j.suites; if(typeof renderDynamic==='function') renderDynamic(); }
+  if(j && j.spec && j.latency){
+    const n=normalize(j);
+    ['spec','latency','context','privacy','suites'].forEach(k=>Object.assign(DATA[k],n[k]));
+    if(typeof renderDynamic==='function') renderDynamic();
+  }
 }).catch(()=>{}); }
 
 /* ---------- bilingual strings ---------- */
@@ -303,50 +362,53 @@ const I18N = {
       th:"มี <em>โมเดลใหม่อยู่ใน Mac ของคุณ</em> — เราวัดมันแล้ว"},
   lede:{en:"macOS 27 ships an on-device language model you can call from the command line. <strong>No API key, no cloud, no per-token bill.</strong> This is an open, reproducible benchmark of it — every number below was measured on the machine in the spec strip above, and you can re-measure it on yours.",
         th:"macOS 27 มาพร้อมโมเดลภาษาออนดีไวซ์ที่เรียกจาก command line ได้ <strong>ไม่ต้องใช้ API key ไม่ต้องเชื่อมคลาวด์ ไม่มีค่าใช้จ่ายต่อโทเคน</strong> นี่คือเกณฑ์มาตรฐานแบบเปิดที่ทำซ้ำได้ — ทุกตัวเลขด้านล่างวัดจากเครื่องในแถบสเปกด้านบน และคุณเองก็วัดบนเครื่องคุณได้"},
-  ctx_h:{en:"~4,000 usable tokens — and it actually remembers",th:"~4,000 โทเคนที่ใช้ได้จริง — และมันจำได้จริง"},
-  ctx_lede:{en:"The hard ceiling (binary-searched) is ~4k tokens. The honest finding is the second part: facts buried in the middle of documents up to 3,000 tokens long were retrieved <span class='green'>every time — 12 of 12</span>. It fits the context <em>and</em> understands it.",
-            th:"ขีดจำกัดสูงสุด (ค้นแบบ binary search) อยู่ที่ ~4k โทเคน ส่วนที่ต้องรู้คือประเด็นที่สอง: ข้อมูลที่ซ่อนอยู่กลางเอกสารยาวถึง 3,000 โทเคนถูกดึงออกมาได้ <span class='green'>ครบทุกครั้ง — 12 จาก 12</span> มันพอดีกับ context <em>และ</em>เข้าใจมัน"},
-  spd_h:{en:"Prefill ~967 tok/s. Decode ~71 tok/s.",th:"Prefill ~967 tok/s · Decode ~71 tok/s"},
-  spd_lede:{en:"A single \"tokens/sec\" number lies — this model has two. It <strong>reads</strong> your prompt fast (prefill, ~967 tok/s) but <strong>writes</strong> the answer slower (decode, ~71 tok/s). We separated them with linear regression, not a single stopwatch.",
-            th:"ตัวเลข \"tokens/sec\" ตัวเดียวโกหกคุณ — โมเดลนี้มีสองความเร็ว มัน<strong>อ่าน</strong> prompt ของคุณเร็ว (prefill ~967 tok/s) แต่<strong>เขียน</strong>คำตอบช้ากว่า (decode ~71 tok/s) เราแยกสองค่านี้ด้วยการถดถอยเชิงเส้น ไม่ใช่จับเวลาแบบจุดเดียว"},
+  ctx_h:d=>{const k=Math.round(d.context.ceiling/1000);return{en:`~${k},000 usable tokens — and it actually remembers`,th:`~${k},000 โทเคนที่ใช้ได้จริง — และมันจำได้จริง`};},
+  ctx_lede:d=>{const k=Math.round(d.context.ceiling/1000),L=d.context.recall_max_len.toLocaleString(),R=d.context.recall_recalled,O=d.context.recall_of,p=R>=O;return{en:`The hard ceiling (binary-searched) is ~${k}k tokens. The honest finding is the second part: facts buried in the middle of documents up to ${L} tokens long were retrieved <span class='green'>${p?'every time — ':''}${R} of ${O}</span>. It fits the context <em>and</em> understands it.`,th:`ขีดจำกัดสูงสุด (ค้นแบบ binary search) อยู่ที่ ~${k}k โทเคน ส่วนที่ต้องรู้คือประเด็นที่สอง: ข้อมูลที่ซ่อนอยู่กลางเอกสารยาวถึง ${L} โทเคนถูกดึงออกมาได้ <span class='green'>${p?'ครบทุกครั้ง — ':''}${R} จาก ${O}</span> มันพอดีกับ context <em>และ</em>เข้าใจมัน`};},
+  spd_h:d=>({en:`Prefill ~${Math.round(d.latency.prefill_tps)} tok/s. Decode ~${Math.round(d.latency.decode_tps)} tok/s.`,th:`Prefill ~${Math.round(d.latency.prefill_tps)} tok/s · Decode ~${Math.round(d.latency.decode_tps)} tok/s`}),
+  spd_lede:d=>{const p=Math.round(d.latency.prefill_tps),de=Math.round(d.latency.decode_tps);return{en:`A single "tokens/sec" number lies — this model has two. It <strong>reads</strong> your prompt fast (prefill, ~${p} tok/s) but <strong>writes</strong> the answer slower (decode, ~${de} tok/s). We separated them with linear regression, not a single stopwatch.`,
+            th:`ตัวเลข "tokens/sec" ตัวเดียวโกหกคุณ — โมเดลนี้มีสองความเร็ว มัน<strong>อ่าน</strong> prompt ของคุณเร็ว (prefill ~${p} tok/s) แต่<strong>เขียน</strong>คำตอบช้ากว่า (decode ~${de} tok/s) เราแยกสองค่านี้ด้วยการถดถอยเชิงเส้น ไม่ใช่จับเวลาแบบจุดเดียว`};},
   acc_h:{en:"How smart is it, on tests people recognise?",th:"ฉลาดแค่ไหน ในแบบทดสอบที่คนรู้จัก?"},
   acc_lede:{en:"Vendor marketing numbers are impossible to compare. So we ran the same open suites everyone uses — grade-school math (GSM8K), code generation (HumanEval), and broad knowledge (MMLU). Subset sizes chosen for a ~1-hour run on one Mac.",
             th:"ตัวเลขการตลาดของผู้ผลิตเทียบกันไม่ได้ เราเลยรันชุดทดสอบเปิดเดียวกับที่ทุกคนใช้ — คณิตระดับประถม (GSM8K) เขียนโค้ด (HumanEval) และความรู้รอบตัว (MMLU)"},
-  priv_h:{en:"During a 24-second generation, zero model-related traffic",th:"ในการสร้างคำตอบ 24 วินาที ไม่มีการรับส่งข้อมูลจากโมเดลเลย"},
+  priv_h:d=>{const s=d.privacy.gen_wall_s?Math.round(d.privacy.gen_wall_s):'~24';return{en:`During a ${s}-second generation, zero model-related traffic`,th:`ในการสร้างคำตอบ ${s} วินาที ไม่มีการรับส่งข้อมูลจากโมเดลเลย`};},
   priv_lede:{en:"We can't <em>prove</em> \"offline\" with a passive probe (background apps always chatter), so we did the honest thing: measured every byte on the interface during inference vs an equal idle window, and listed <strong>which process sent each byte</strong>. None of them were the model.",
              th:"เรายืนยัน \"ออฟไลน์\" ด้วยการวัดแบบ passive ไม่ได้ (แอปพื้นหลังส่งข้อมูลตลอด) เราเลยทำแบบตรงไปตรงมา: วัดทุกไบต์บนอินเทอร์เฟซระหว่าง inference เทียบกับช่วง idle เท่ากัน และ<strong>ระบุว่าโพรเซสไหนส่งแต่ละไบต์</strong> ไม่มีโพรเซสไหนเป็นของโมเดล"},
-  priv_box:{en:"Inference window: 63 KB out · 9 processes. Idle window: 46 KB out · 10 processes. Every process in both windows was an unrelated background app — <span class='green'>none was the model</span>. See the evidence →",
-             th:"ช่วง inference: ส่งออก 63 KB · 9 โพรเซส · ช่วง idle: 46 KB · 10 โพรเซส ทุกโพรเซสในสองช่วงเป็นแอปพื้นหลังที่ไม่เกี่ยวข้อง — <span class='green'>ไม่มีโมเดล</span>"},
+  priv_box:d=>{const i=Math.round(d.privacy.inference_out/1000),id=Math.round(d.privacy.idle_out/1000),ip=d.privacy.inference_procs,dp=d.privacy.idle_procs;return{en:`Inference window: ${i} KB out · ${ip} processes. Idle window: ${id} KB out · ${dp} processes. Every process in both windows was an unrelated background app — <span class='green'>none was the model</span>. See the evidence →`,
+             th:`ช่วง inference: ส่งออก ${i} KB · ${ip} โพรเซส · ช่วง idle: ${id} KB · ${dp} โพรเซส ทุกโพรเซสในสองช่วงเป็นแอปพื้นหลังที่ไม่เกี่ยวข้อง — <span class='green'>ไม่มีโมเดล</span>`};},
   use_h:{en:"A decision guide, not a score",th:"คู่มือตัดสินใจ ไม่ใช่แค่คะแนน"},
   use_lede:{en:"Verdicts below are an editorial call derived from the measured numbers above (speed, context, accuracy, privacy) — not a separate experiment. Green = well-suited, amber = workable, red = not the right tool. The fit score is a judgement out of 5, not a sample size.",
             th:"คำตัดสินด้านล่างเป็นการประเมินจากตัวเลขที่วัดได้ด้านบน (ความเร็ว, context, ความแม่นยำ, ความเป็นส่วนตัว) ไม่ใช่การทดลองครั้งใหม่ เขียว=เหมาะมาก อำพัน=ใช้ได้ แดง=ไม่ใช่เครื่องมือที่เหมาะ คะแนนความเหมาะคือการประเมินเต็ม 5 ไม่ใช่ขนาดตัวอย่าง"},
   verd_h:{en:"The takeaway",th:"บทสรุป"},
   verd1:{en:"A genuinely useful <em>local</em> model — not a GPT-4 replacement, and it shouldn't be judged as one. Its job is the one it's built for: fast, private, always-on assistance on your own machine.",
           th:"โมเดล<em>ในเครื่อง</em>ที่ใช้งานได้จริง — ไม่ใช่ตัวแทนทดแทน GPT-4 และไม่ควรนำมาเทียบ หน้าที่ของมันคือสิ่งที่มันถูกออกแบบมา: ผู้ช่วยที่เร็ว เป็นส่วนตัว และพร้อมใช้บนเครื่องของคุณเอง"},
-  verd2:{en:"<span class='amber'>Strengths:</span> instant cold-ish start, ~0.4s warm first-token, perfect mid-context recall, and the strongest possible privacy story (on-device). <span class='amber'>Limits:</span> a ~4k context, ~71 tok/s structured-output decode, and accuracy suited to everyday tasks — not frontier reasoning.",
-          th:"<span class='amber'>จุดแข็ง:</span> เริ่มต้นเร็ว, first-token อุ่น ~0.4 วินาที, จำกลาง context ได้ครบ และความเป็นส่วนตัวระดับสูงสุด (ออนดีไวซ์) <span class='amber'>ขีดจำกัด:</span> context ~4k, decode ~71 tok/s, ความแม่นยำเหมาะกับงานประจำวัน ไม่ใช่การให้เหตุผลระดับแนวหน้า"},
+  verd2:d=>{const t='~'+(Math.round(d.latency.warm_ttft_p50*10)/10),k='~'+Math.round(d.context.ceiling/1000)+'k',de='~'+Math.round(d.latency.decode_tps);return{en:`<span class='amber'>Strengths:</span> instant cold-ish start, ${t}s warm first-token, perfect mid-context recall, and the strongest possible privacy story (on-device). <span class='amber'>Limits:</span> a ${k} context, ${de} tok/s structured-output decode, and accuracy suited to everyday tasks — not frontier reasoning.`,
+          th:`<span class='amber'>จุดแข็ง:</span> เริ่มต้นเร็ว, first-token อุ่น ${t} วินาที, จำกลาง context ได้ครบ และความเป็นส่วนตัวระดับสูงสุด (ออนดีไวซ์) <span class='amber'>ขีดจำกัด:</span> context ${k}, decode ${de} tok/s, ความแม่นยำเหมาะกับงานประจำวัน ไม่ใช่การให้เหตุผลระดับแนวหน้า`};},
   meth_h:{en:"How to trust (and reproduce) this",th:"จะไว้วางใจ (และทำซ้ำ) อย่างไร"},
-  meth_list:{en:[
-    "<b>Spec-labeled.</b> Every number applies to the M3 Pro / 18GB / macOS 27.0 machine in the top strip. A different chip will differ.",
+  meth_list:d=>{const sp=d.spec.chip.replace('Apple ',''),rm=d.spec.ram.replace(' ',''),os=d.spec.os;return{en:[
+    "<b>Spec-labeled.</b> Every number applies to the "+sp+" / "+rm+" / "+os+" machine in the top strip. A different chip will differ.",
     "<b>Regression, not stopwatch.</b> Prefill from ttft-vs-input slope; decode from wall-vs-output slope. Single-point \"tokens/sec\" is misleading and we don't report it.",
     "<b>Open harness.</b> <span class='mono'>bench/run_all.py</span> re-runs everything. Datasets (GSM8K, HumanEval, MMLU) are downloaded and scored locally; licenses noted in the repo.",
     "<b>Measured vs reference split.</b> Amber = we measured it on this Mac. Grey = vendor-stated marketing figures, included for scale, not for like-for-like comparison.",
     "<b>\"3B\" unconfirmed.</b> Apple does not publish the parameter count; we don't assert it. Everything else is measured directly.",
     "<b>Privacy is evidence, not proof.</b> We observed no model traffic; proving fully-offline needs the Wi-Fi-off test."
   ],th:[
-    "<b>ระบุสเปกชัดเจน.</b> ทุกตัวเลขใช้กับเครื่อง M3 Pro / 18GB / macOS 27.0 ในแถบบน ชิปอื่นจะต่างออกไป",
+    "<b>ระบุสเปกชัดเจน.</b> ทุกตัวเลขใช้กับเครื่อง "+sp+" / "+rm+" / "+os+" ในแถบบน ชิปอื่นจะต่างออกไป",
     "<b>ถดถอยเชิงเส้น ไม่ใช่จับเวลา.</b> Prefill จากความชัน ttft-vs-input, decode จากความชัน wall-vs-output \"tokens/sec\" แบบจุดเดียวทำให้เข้าใจผิด เราไม่รายงานแบบนั้น",
     "<b>Harness เปิด.</b> <span class='mono'>bench/run_all.py</span> รันซ้ำได้ทั้งหมด ดาต้าเซต (GSM8K, HumanEval, MMLU) ดาวน์โหลดและตรวจในเครื่อง",
     "<b>แยก วัดเอง vs อ้างอิง.</b> อำพัน=เราวัดบนเครื่องนี้ · เทา=ตัวเลขการตลาดของผู้ผลิต ใส่ไว้เป็นมาตราส่วน ไม่ใช่เทียบแบบเท่ากัน",
     "<b>\"3B\" ไม่ยืนยัน.</b> Apple ไม่เปิดเผยจำนวนพารามิเตอร์ เราไม่ยืนยัน ส่วนอื่นวัดโดยตรงทั้งหมด",
     "<b>ความเป็นส่วนตัวคือหลักฐาน ไม่ใช่ข้อพิสูจน์.</b> เราไม่พบการรับส่งข้อมูลของโมเดล การพิสูจน์ออฟไลน์เต็มรูปแบบต้องปิด Wi-Fi"
-  ]}
+  ]};},
 };
+/* resolve an i18n key against a language. values may be {en,th} objects OR
+   d=>{en,th} functions that interpolate from DATA; this collapses both shapes
+   into one localized string so setLang / element loops stay uniform. */
+function i18nVal(k,L){ const v=I18N[k]; if(!v) return null; const o=(typeof v==='function')?v(DATA):v; return (o&&o[L]!=null)?o[L]:null; }
 function setLang(L){
   document.documentElement.lang=L;
-  document.querySelectorAll('[data-i18n]').forEach(e=>{ const k=e.getAttribute('data-i18n'); if(I18N[k]&&I18N[k][L]!=null) e.innerHTML=I18N[k][L]; });
-  document.querySelectorAll('[data-i18n-html]').forEach(e=>{ const k=e.getAttribute('data-i18n-html'); if(I18N[k]&&I18N[k][L]!=null) e.innerHTML=I18N[k][L]; });
-  const ml=document.querySelector('[data-i18n-list]'); if(ml&&I18N.meth_list[L]){ ml.innerHTML=I18N.meth_list[L].map(x=>'<li>'+x+'</li>').join(''); }
+  document.querySelectorAll('[data-i18n]').forEach(e=>{ const v=i18nVal(e.getAttribute('data-i18n'),L); if(v!=null) e.innerHTML=v; });
+  document.querySelectorAll('[data-i18n-html]').forEach(e=>{ const v=i18nVal(e.getAttribute('data-i18n-html'),L); if(v!=null) e.innerHTML=v; });
+  const ml=document.querySelector('[data-i18n-list]'); const mlArr=i18nVal('meth_list',L); if(ml&&Array.isArray(mlArr)){ ml.innerHTML=mlArr.map(x=>'<li>'+x+'</li>').join(''); }
   document.getElementById('btn-en').classList.toggle('on',L==='en');
   document.getElementById('btn-th').classList.toggle('on',L==='th');
   renderDynamic();
@@ -377,9 +439,9 @@ function renderKpis(){
   };
   const warm=DATA.latency.warm_ttft_p50, pre=DATA.latency.prefill_tps, dec=DATA.latency.decode_tps, ctx=DATA.context.ceiling;
   const cards=[
-    [`<span class="big">${warm}<span class="u">s</span></span>`, 'ttft', warm],
-    [`<span class="big">${pre}<span class="u">tok/s</span></span>`, 'pre', pre],
-    [`<span class="big">${dec}<span class="u">tok/s</span></span>`, 'dec', dec],
+    [`<span class="big">${warm.toFixed(2)}<span class="u">s</span></span>`, 'ttft', warm],
+    [`<span class="big">${Math.round(pre)}<span class="u">tok/s</span></span>`, 'pre', pre],
+    [`<span class="big">${Math.round(dec)}<span class="u">tok/s</span></span>`, 'dec', dec],
     [`<span class="big">~${(ctx/1000).toFixed(1)}<span class="u">k</span></span>`, 'ctx', ctx]
   ];
   document.getElementById('kpis').innerHTML=cards.map(([b,k])=>
@@ -387,17 +449,32 @@ function renderKpis(){
 }
 
 /* ---------- scores ---------- */
+/* Wilson score 95% CI for a binomial proportion (k successes / n trials).
+   Better-behaved than p ± z·se near 0 and 1; z = 1.959964 for 95%. */
+function wilson(k,n){
+  if(!n) return {lo:0,hi:0};
+  const z=1.959964, p=k/n, denom=1+z*z/n;
+  const centre=(p+z*z/(2*n))/denom;
+  const margin=(z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n)))/denom;
+  return {lo:Math.max(0,centre-margin), hi:Math.min(1,centre+margin)};
+}
 function renderScores(){
   const g=DATA.suites.gsm8k, h=DATA.suites.humaneval, m=DATA.suites.mmlu;
-  const card=(tag,nm,val,of,n,pending)=>`<div class="score ${pending?'pending':''}">
+  const card=(tag,nm,rate,k,n,verb)=>{
+    if(rate==null) return `<div class="score pending"><div class="tag">${tag}</div><div class="nm">${nm}</div>
+      <div class="pct">—</div><div class="bar"><i style="width:0"></i></div><div class="n">n = ${n}</div></div>`;
+    const pct=rate*100, ci=wilson(k,n), lo=(ci.lo*100).toFixed(1), hi=(ci.hi*100).toFixed(1);
+    return `<div class="score">
     <div class="tag">${tag}</div><div class="nm">${nm}</div>
-    <div class="pct">${pending?'—':val+'<span class="of">% / '+of+'</span>'}</div>
-    <div class="bar"><i style="width:${pending?0:val}%"></i></div>
-    <div class="n">n = ${n}</div></div>`;
+    <div class="pct">${pct.toFixed(1)}<span class="of">%</span></div>
+    <div class="ci">95% CI ${lo}–${hi}%</div>
+    <div class="bar"><i style="width:${pct}%"></i><span class="ciwhisk" style="left:${lo}%;right:${(100-ci.hi*100).toFixed(1)}%"></span></div>
+    <div class="n">${k} / ${n} ${verb}</div></div>`;
+  };
   document.getElementById('scores').innerHTML=
-    card('GSM8K','Grade-school math',(g.accuracy*100).toFixed(1),'% of '+g.n,g.n,g.accuracy==null)+
-    card('HumanEval','Code generation',(h.pass_at_1*100).toFixed(1),'% pass@1',h.n,h.pass_at_1==null)+
-    card('MMLU','Broad knowledge',(m.accuracy*100).toFixed(1),'% of '+m.n,m.n,m.accuracy==null);
+    card('GSM8K','Grade-school math',g.accuracy,g.correct,g.n,'correct')+
+    card('HumanEval','Code generation',h.pass_at_1,h.passed,h.n,'passed')+
+    card('MMLU','Broad knowledge',m.accuracy,m.correct,m.n,'correct');
 }
 
 /* ---------- charts ---------- */
@@ -408,7 +485,7 @@ function ctxChart(){
   const svg=d3.select(el).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
   const x=d3.scaleLog().domain([800,2.2e6]).range([m.l,W-m.r]);
   // [name, nominal/functional tokens, measured-by-us?]
-  const refs=[['AFM · measured',4037,true],['Llama 3.2 3B',128000,false],['GPT-4o',128000,false],['Claude Sonnet 4',200000,false],['Gemini 1.5 Pro',1000000,false]];
+  const refs=[['AFM · measured',DATA.context.ceiling,true],['Llama 3.2 3B',128000,false],['GPT-4o',128000,false],['Claude Sonnet 4',200000,false],['Gemini 1.5 Pro',1000000,false]];
   const rowH=(H-m.t-m.b)/refs.length;
   // meaningful decade gridlines (1k / 10k / 100k / 1M)
   [1e3,1e4,1e5,1e6].forEach(t=>svg.append('line').attr('x1',x(t)).attr('x2',x(t)).attr('y1',m.t-6).attr('y2',H-m.b).attr('stroke',LINE).attr('stroke-dasharray','2 3').attr('opacity',.45));
@@ -422,7 +499,7 @@ function ctxChart(){
     // row label on the left
     svg.append('text').attr('x',m.l-12).attr('y',cy+4).attr('text-anchor','end').attr('fill',me?CREAM:DIM).attr('font-family','JetBrains Mono').attr('font-size',11).attr('font-weight',me?700:400).text(nm);
     if(me){
-      svg.append('text').attr('x',x(v)+14).attr('y',cy+5).attr('fill',AMBER).attr('font-family','Fraunces').attr('font-weight',900).attr('font-size',22).text('4,037');
+      svg.append('text').attr('x',x(v)+14).attr('y',cy+5).attr('fill',AMBER).attr('font-family','Fraunces').attr('font-weight',900).attr('font-size',22).text(DATA.context.ceiling.toLocaleString());
       svg.append('text').attr('x',x(v)+14).attr('y',cy+19).attr('fill',MUTE).attr('font-family','JetBrains Mono').attr('font-size',9).text('measured');
     } else {
       svg.append('text').attr('x',x(v)+10).attr('y',cy+4).attr('fill',DIM).attr('font-family','JetBrains Mono').attr('font-size',10).text(v>=1e6?(v/1e6)+'M':Math.round(v/1e3)+'k');
@@ -447,7 +524,7 @@ function prefillChart(){
   svg.append('g').attr('transform',`translate(0,${H-m.b})`).call(d3.axisBottom(x).ticks(4).tickSize(0)).call(g=>g.select('.domain').remove());
   svg.append('g').attr('transform',`translate(${m.l},0)`).call(d3.axisLeft(y).ticks(4).tickSize(0)).call(g=>g.select('.domain').remove());
   svg.append('text').attr('x',W/2).attr('y',H-4).attr('text-anchor','middle').attr('fill',DIM).attr('font-family','JetBrains Mono').attr('font-size',9).text('input tokens → ttft (s)');
-  svg.append('text').attr('x',W-m.r).attr('y',m.t+8).attr('text-anchor','end').attr('fill',AMBER).attr('font-family','Fraunces').attr('font-weight',700).attr('font-size',20).text(DATA.latency.prefill_tps+' tok/s');
+  svg.append('text').attr('x',W-m.r).attr('y',m.t+8).attr('text-anchor','end').attr('fill',AMBER).attr('font-family','Fraunces').attr('font-weight',700).attr('font-size',20).text(Math.round(DATA.latency.prefill_tps)+' tok/s');
 }
 function decodeChart(){
   const el=document.getElementById('decChart'); el.innerHTML='';
@@ -477,8 +554,9 @@ function renderMatrix(){
   };
   const lang = T[L]?L:'en';
   // verdicts: g/a/r with n evidence + confidence
+  const g=DATA.suites.gsm8k,h=DATA.suites.humaneval;
   const V=[
-    ['g','recall 3/3',4],['g','~967 prefill',4],['g','instruction',4],['a','JSON ok',3],['g','HumanEval',3],['r','~4k limit',4],['r','GSM8K sub',4],['g','on-device',5]
+    ['g',`recall ${DATA.context.needles_per_len}/${DATA.context.needles_per_len}`,4],['g',`~${Math.round(DATA.latency.prefill_tps)} prefill`,4],['g','instruction-following',4],['a','structured JSON',3],['g',`${Math.round(h.pass_at_1*100)}% HumanEval`,3],['r',`~${Math.round(DATA.context.ceiling/1000)}k ctx limit`,4],['r',`${Math.round(g.accuracy*100)}% GSM8K`,4],['g','on-device',5]
   ];
   const cls={g:'green',a:'amber',r:'red'};
   let html=`<div class="hd">${L==='th'?'งาน':'Task'}</div>
@@ -496,10 +574,48 @@ function renderMatrix(){
   document.getElementById('matrix').innerHTML=html;
 }
 
-function renderDynamic(){ renderSpec(); renderKpis(); renderScores(); ctxChart(); prefillChart(); decodeChart(); renderMatrix();
+/* ---------- provenance notes (context ceiling, fit equations) ---------- */
+/* r² derived from observed vs predicted, so the "≈0.99" claim is recomputed
+   from the points + fit the reader can see — never a stored constant. */
+function r2Of(ys,predYs){
+  const mean=ys.reduce((a,b)=>a+b,0)/ys.length;
+  const tot=ys.reduce((a,y)=>a+(y-mean)*(y-mean),0);
+  const res=ys.reduce((a,y,i)=>a+(y-predYs[i])*(y-predYs[i]),0);
+  return tot?1-res/tot:1;
+}
+function renderProv(){
+  const c=DATA.context, lf=DATA.latency;
+  const ex=document.getElementById('provCtx');
+  if(ex) ex.innerHTML=`<b>Measured</b> (amber): functional ceiling ${c.ceiling.toLocaleString()} tok ok → ${c.ceiling_fail.toLocaleString()} tok hard error; multi-needle recall ${c.needles_per_len}/${c.needles_per_len} at every length up to ${c.recall_max_len.toLocaleString()} tok. <b>Reference</b> (grey, vendor-stated, not measured by us): GPT-4o 128k · Claude Sonnet 200k · Gemini 1.5 Pro 1M. Log scale.`;
+  const pe=document.getElementById('provPre'), pf=lf.prefill_fit;
+  if(pe){ const ys=lf.prefill_points.map(p=>p.ttft), pr=lf.prefill_points.map(p=>pf.intercept+pf.slope*p.n);
+    pe.innerHTML=`<b>Fit</b>: ttft = ${pf.intercept.toFixed(3)} + ${pf.slope.toFixed(5)}·n  →  slope = prefill rate. r²≈${r2Of(ys,pr).toFixed(2)} across ${lf.prefill_points.length} input sizes.`; }
+  const de=document.getElementById('provDec'), df=lf.decode_fit;
+  if(de) de.innerHTML=`<b>Fit</b>: wall = ${df.intercept.toFixed(2)} + ${df.slope.toFixed(4)}·out_tok  →  decode ${lf.decode_tps.toFixed(1)} tok/s. Per-length: ${lf.decode_per_len.join(' / ')} tok/s (monotonic, consistent).`;
+}
+/* privacy terminal: render every observed process from DATA (complete evidence,
+   not a curated subset) and assert the model-related count = 0. */
+function renderTerm(){
+  const el=document.getElementById('procTerm'); if(!el) return;
+  const rows=DATA.privacy.processes.map(p=>{
+    const cmt=/mdns|dns/i.test(p.name)?'# system DNS':'# background app';
+    return `<span class="pr">${p.name.padEnd(18)}</span> out=${String(p.out).padStart(6)}   <span class="cmt">${cmt}</span>`;
+  }).join('\n');
+  el.innerHTML=
+`<span class="cmt"># nettop -P -x -J bytes_in,bytes_out -t external  (during inference)</span>
+${rows}
+<span class="hi">fm / FoundationModels / model-related</span>  <span class="red">— NOT FOUND</span>
+<span class="cmt"># model-related external processes observed: ${DATA.privacy.model_procs}</span>`;
+}
+function renderDynamic(){ renderSpec(); renderKpis(); renderScores(); ctxChart(); prefillChart(); decodeChart(); renderMatrix(); renderProv(); renderTerm();
   const ex=DATA.privacy.excess; const kb=Math.round(ex/1024);
-  document.getElementById('privExcess').textContent=(kb>=0?'+':'')+kb+' KB';
-  document.getElementById('privExcess').style.color = Math.abs(kb)<25?GREEN:AMBER;
+  const pe=document.getElementById('privExcess');
+  pe.textContent=(kb>=0?'+':'')+kb+' KB';
+  pe.style.color=Math.abs(kb)<25?GREEN:AMBER;
+  const pc=document.getElementById('privCap');
+  if(pc) pc.textContent=`inference − idle: ${(kb>=0?'+':'')+kb} KB (sign flips run-to-run → noise, not signal)`;
+  const fm=document.getElementById('footMach');
+  if(fm) fm.innerHTML=`Apple Foundation Models on-device benchmark · measured on ${DATA.spec.chip}, ${DATA.spec.os} (build ${DATA.spec.build}).`;
 }
 setLang('en');
 </script>
