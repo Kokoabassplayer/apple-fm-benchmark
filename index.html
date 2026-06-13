@@ -14,15 +14,16 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230c0d0b'/%3E%3Ctext x='50' y='72' font-size='62' text-anchor='middle' font-family='Georgia,serif' font-weight='900' fill='%23e6a745'%3EA%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=Hanken+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+Thai:wght@400;500;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=Hanken+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+Thai:wght@400;500;700&family=Noto+Serif+Thai:wght@600;700&display=swap" rel="stylesheet">
+<!-- D3 vendored locally (vendor/d3.min.js) so charts render without a CDN and work offline -->
+<script src="vendor/d3.min.js"></script>
 <style>
 :root{
   --ink:#0c0d0b; --panel:#14161300; --panel-bg:#161814; --panel-2:#1d201b;
-  --line:#2c302a; --cream:#f3efe4; --mute:#9aa097; --dim:#6b716a;
+  --line:#2c302a; --cream:#f3efe4; --mute:#9aa097; --dim:#7b817a;
   --amber:#e6a745; --green:#7fc97f; --red:#e06a5a; --blue:#7fb2e0;
-  --serif:'Fraunces',Georgia,serif; --sans:'Hanken Grotesk',system-ui,sans-serif;
-  --mono:'JetBrains Mono',ui-monospace,monospace; --thai:'Noto Sans Thai','Hanken Grotesk',sans-serif;
+  --serif:'Fraunces','Noto Serif Thai',Georgia,serif; --sans:'Hanken Grotesk','Noto Sans Thai',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Noto Sans Thai',ui-monospace,monospace; --thai:'Noto Sans Thai','Hanken Grotesk',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -126,8 +127,25 @@ ul.clean li b{color:var(--cream);font-weight:500}
 
 .foot{padding:40px 0 60px;font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.8}
 .foot a{color:var(--mute)}
+
+/* keyboard focus + load reveal */
+a:focus-visible,button:focus-visible{outline:2px solid var(--amber);outline-offset:3px;border-radius:4px}
+@media(prefers-reduced-motion:no-preference){
+  .hero{animation:rise .8s cubic-bezier(.2,.7,.2,1) both}
+  .kpis>.kpi,.scores>.score{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+  .kpis>.kpi:nth-child(2){animation-delay:.07s}
+  .kpis>.kpi:nth-child(3){animation-delay:.14s}
+  .kpis>.kpi:nth-child(4){animation-delay:.21s}
+  .scores>.score:nth-child(2){animation-delay:.08s}
+  .scores>.score:nth-child(3){animation-delay:.16s}
+  @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+}
 @media(max-width:760px){.kpis,.scores,.two{grid-template-columns:1fr 1fr}.matrix{grid-template-columns:1fr 1fr}.specitem{border-right:0;border-bottom:1px solid var(--line);padding:8px 0}}
-:lang(th){font-family:var(--thai)}
+/* Thai script is taller/denser — give it airier line-height.
+   Type stacks above already route Thai headings to Noto Serif Thai
+   and Thai body to Noto Sans Thai, so no font override is needed here. */
+:lang(th){line-height:1.72}
+:lang(th) h1,:lang(th) h2{letter-spacing:0}
 </style>
 </head>
 <body>
@@ -158,7 +176,7 @@ ul.clean li b{color:var(--cream);font-weight:500}
 <section id="context">
   <div class="secno">01 · CONTEXT WINDOW</div>
   <h2 data-i18n="ctx_h">~4,000 usable tokens — and it actually remembers</h2>
-  <p class="slede" data-i18n="ctx_lede">The hard ceiling (binary-searched) is ~4k tokens. The honest finding is the second part: facts buried in the middle of a 3,000-token document were retrieved <span class="green">9 out of 9 times</span>. It fits the context <em>and</em> understands it.</p>
+  <p class="slede" data-i18n="ctx_lede">The hard ceiling (binary-searched) is ~4k tokens. The honest finding is the second part: facts buried in the middle of documents up to 3,000 tokens long were retrieved <span class="green">every time — 12 of 12</span>. It fits the context <em>and</em> understands it.</p>
   <div class="chart"><div id="ctxChart"></div></div>
   <div class="prov"><b>Measured</b> (amber): functional ceiling 4,037 tok ok → 4,179 tok hard error; multi-needle recall 3/3 at every length up to 3,000 tok. <b>Reference</b> (grey, vendor-stated, not measured by us): GPT-4o 128k · Claude Sonnet 200k · Gemini 1.5 Pro 1M. Log scale.</div>
 </section>
@@ -262,7 +280,7 @@ const DATA = {
     prefill_points:[{n:256,ttft:0.417},{n:512,ttft:0.614},{n:1024,ttft:1.054},{n:2048,ttft:2.045},{n:3072,ttft:3.347}],
     decode_tps:70.7, decode_fit:{slope:0.01415,intercept:-0.362},
     decode_points:[{tok:380,wall:5.062},{tok:900,wall:12.295},{tok:1700,wall:23.725}],
-    warm_ttft_p50:0.42, cold_ttft:2.55
+    warm_ttft_p50:0.42, cold_ttft:2.44
   },
   context:{ ceiling:4037, ceiling_fail:4179,
             recall:[{tok:512,r:1.0},{tok:1024,r:1.0},{tok:2048,r:1.0},{tok:3000,r:1.0}] },
@@ -286,22 +304,22 @@ const I18N = {
   lede:{en:"macOS 27 ships an on-device language model you can call from the command line. <strong>No API key, no cloud, no per-token bill.</strong> This is an open, reproducible benchmark of it — every number below was measured on the machine in the spec strip above, and you can re-measure it on yours.",
         th:"macOS 27 มาพร้อมโมเดลภาษาออนดีไวซ์ที่เรียกจาก command line ได้ <strong>ไม่ต้องใช้ API key ไม่ต้องเชื่อมคลาวด์ ไม่มีค่าใช้จ่ายต่อโทเคน</strong> นี่คือเกณฑ์มาตรฐานแบบเปิดที่ทำซ้ำได้ — ทุกตัวเลขด้านล่างวัดจากเครื่องในแถบสเปกด้านบน และคุณเองก็วัดบนเครื่องคุณได้"},
   ctx_h:{en:"~4,000 usable tokens — and it actually remembers",th:"~4,000 โทเคนที่ใช้ได้จริง — และมันจำได้จริง"},
-  ctx_lede:{en:"The hard ceiling (binary-searched) is ~4k tokens. The honest finding is the second part: facts buried in the middle of a 3,000-token document were retrieved <span class='green'>9 out of 9 times</span>. It fits the context <em>and</em> understands it.",
-            th:"ขีดจำกัดสูงสุด (ค้นแบบ binary search) อยู่ที่ ~4k โทเคน ส่วนที่ต้องรู้คือประเด็นที่สอง: ข้อมูลที่ซ่อนอยู่กลางเอกสาร 3,000 โทเคนถูกดึงออกมาได้ <span class='green'>9 จาก 9 ครั้ง</span> มันพอดีกับ context <em>และ</em>เข้าใจมัน"},
+  ctx_lede:{en:"The hard ceiling (binary-searched) is ~4k tokens. The honest finding is the second part: facts buried in the middle of documents up to 3,000 tokens long were retrieved <span class='green'>every time — 12 of 12</span>. It fits the context <em>and</em> understands it.",
+            th:"ขีดจำกัดสูงสุด (ค้นแบบ binary search) อยู่ที่ ~4k โทเคน ส่วนที่ต้องรู้คือประเด็นที่สอง: ข้อมูลที่ซ่อนอยู่กลางเอกสารยาวถึง 3,000 โทเคนถูกดึงออกมาได้ <span class='green'>ครบทุกครั้ง — 12 จาก 12</span> มันพอดีกับ context <em>และ</em>เข้าใจมัน"},
   spd_h:{en:"Prefill ~967 tok/s. Decode ~71 tok/s.",th:"Prefill ~967 tok/s · Decode ~71 tok/s"},
   spd_lede:{en:"A single \"tokens/sec\" number lies — this model has two. It <strong>reads</strong> your prompt fast (prefill, ~967 tok/s) but <strong>writes</strong> the answer slower (decode, ~71 tok/s). We separated them with linear regression, not a single stopwatch.",
-            th:"ตัวเลข \"tokens/sec\" ตัวเดียวโกหคุ — โมเดลนี้มีสองความเร็ว มัน<strong>อ่าน</strong> prompt ของคุณเร็ว (prefill ~967 tok/s) แต่<strong>เขียน</strong>คำตอบช้ากว่า (decode ~71 tok/s) เราแยกสองค่านี้ด้วยการถดถอยเชิงเส้น ไม่ใช่จับเวลาแบบจุดเดียว"},
-  acc_h:{en:"How smart is it, on tests people recognise?",th:"ฉลากแค่ไหน ในแบบทดสอบที่คนรู้จัก?"},
+            th:"ตัวเลข \"tokens/sec\" ตัวเดียวโกหกคุณ — โมเดลนี้มีสองความเร็ว มัน<strong>อ่าน</strong> prompt ของคุณเร็ว (prefill ~967 tok/s) แต่<strong>เขียน</strong>คำตอบช้ากว่า (decode ~71 tok/s) เราแยกสองค่านี้ด้วยการถดถอยเชิงเส้น ไม่ใช่จับเวลาแบบจุดเดียว"},
+  acc_h:{en:"How smart is it, on tests people recognise?",th:"ฉลาดแค่ไหน ในแบบทดสอบที่คนรู้จัก?"},
   acc_lede:{en:"Vendor marketing numbers are impossible to compare. So we ran the same open suites everyone uses — grade-school math (GSM8K), code generation (HumanEval), and broad knowledge (MMLU). Subset sizes chosen for a ~1-hour run on one Mac.",
-            th:"ตัวเลขการตลาดของผู้ผลิตเทียบกันไม่ได้ เราเลยวิ่งชุดทดสอบเปิดเดียวกับที่ทุกคนใช้ — คณิตระดับประถม (GSM8K) เขียนโค้ด (HumanEval) และความรู้รอบตัว (MMLU)"},
+            th:"ตัวเลขการตลาดของผู้ผลิตเทียบกันไม่ได้ เราเลยรันชุดทดสอบเปิดเดียวกับที่ทุกคนใช้ — คณิตระดับประถม (GSM8K) เขียนโค้ด (HumanEval) และความรู้รอบตัว (MMLU)"},
   priv_h:{en:"During a 24-second generation, zero model-related traffic",th:"ในการสร้างคำตอบ 24 วินาที ไม่มีการรับส่งข้อมูลจากโมเดลเลย"},
   priv_lede:{en:"We can't <em>prove</em> \"offline\" with a passive probe (background apps always chatter), so we did the honest thing: measured every byte on the interface during inference vs an equal idle window, and listed <strong>which process sent each byte</strong>. None of them were the model.",
              th:"เรายืนยัน \"ออฟไลน์\" ด้วยการวัดแบบ passive ไม่ได้ (แอปพื้นหลังส่งข้อมูลตลอด) เราเลยทำแบบตรงไปตรงมา: วัดทุกไบต์บนอินเทอร์เฟซระหว่าง inference เทียบกับช่วง idle เท่ากัน และ<strong>ระบุว่าโพรเซสไหนส่งแต่ละไบต์</strong> ไม่มีโพรเซสไหนเป็นของโมเดล"},
   priv_box:{en:"Inference window: 63 KB out · 9 processes. Idle window: 46 KB out · 10 processes. Every process in both windows was an unrelated background app — <span class='green'>none was the model</span>. See the evidence →",
              th:"ช่วง inference: ส่งออก 63 KB · 9 โพรเซส · ช่วง idle: 46 KB · 10 โพรเซส ทุกโพรเซสในสองช่วงเป็นแอปพื้นหลังที่ไม่เกี่ยวข้อง — <span class='green'>ไม่มีโมเดล</span>"},
   use_h:{en:"A decision guide, not a score",th:"คู่มือตัดสินใจ ไม่ใช่แค่คะแนน"},
-  use_lede:{en:"Verdicts below are derived from the measured numbers above (speed, context, accuracy, privacy) — not vibes. Green = well-suited, amber = workable, red = not the right tool.",
-            th:"คำตัดสินด้านล่างมาจากตัวเลขที่วัดได้ด้านบน (ความเร็ว, context, ความแม่นยำ, ความเป็นส่วนตัว) ไม่ใช่ความรู้สึก เขียว=เหมาะมาก อำพัน=ใช้ได้ แดง=ไม่ใช่เครื่องมือที่เหมาะ"},
+  use_lede:{en:"Verdicts below are an editorial call derived from the measured numbers above (speed, context, accuracy, privacy) — not a separate experiment. Green = well-suited, amber = workable, red = not the right tool. The fit score is a judgement out of 5, not a sample size.",
+            th:"คำตัดสินด้านล่างเป็นการประเมินจากตัวเลขที่วัดได้ด้านบน (ความเร็ว, context, ความแม่นยำ, ความเป็นส่วนตัว) ไม่ใช่การทดลองครั้งใหม่ เขียว=เหมาะมาก อำพัน=ใช้ได้ แดง=ไม่ใช่เครื่องมือที่เหมาะ คะแนนความเหมาะคือการประเมินเต็ม 5 ไม่ใช่ขนาดตัวอย่าง"},
   verd_h:{en:"The takeaway",th:"บทสรุป"},
   verd1:{en:"A genuinely useful <em>local</em> model — not a GPT-4 replacement, and it shouldn't be judged as one. Its job is the one it's built for: fast, private, always-on assistance on your own machine.",
           th:"โมเดล<em>ในเครื่อง</em>ที่ใช้งานได้จริง — ไม่ใช่ตัวแทนทดแทน GPT-4 และไม่ควรนำมาเทียบ หน้าที่ของมันคือสิ่งที่มันถูกออกแบบมา: ผู้ช่วยที่เร็ว เป็นส่วนตัว และพร้อมใช้บนเครื่องของคุณเอง"},
@@ -383,30 +401,35 @@ function renderScores(){
 }
 
 /* ---------- charts ---------- */
-const AMBER='#e6a745', GREEN='#7fc97f', MUTE='#9aa097', DIM='#6b716a', LINE='#2c302a', CREAM='#f3efe4';
-function axis(g,scale,ticks,orient){
-  g.selectAll('line').data(ticks).join('line').attr('x1',d=>scale(d)).attr('x2',d=>scale(d))
-    .attr('y1',0).attr('y2',orient==='x'?320:-320).attr('stroke',LINE).attr('stroke-width',1).attr('opacity',.5);
-}
+const AMBER='#e6a745', GREEN='#7fc97f', MUTE='#9aa097', DIM='#7b817a', LINE='#2c302a', CREAM='#f3efe4';
 function ctxChart(){
   const el=document.getElementById('ctxChart'); el.innerHTML='';
-  const W=640,H=320,m={t:24,r:24,b:46,l:54};
+  const W=640,H=300,m={t:22,r:30,b:48,l:160};
   const svg=d3.select(el).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
-  const x=d3.scaleLog().domain([500,1.2e6]).range([m.l,W-m.r]);
-  const y=d3.scaleLinear().domain([0,105]).range([H-m.b,m.t]);
-  const refs=[['AFM (measured)',4037,AMBER,true],['Llama 3.2 3B',128000,MUTE,false],['GPT-4o',128000,MUTE,false],['Claude Sonnet 4',200000,MUTE,false],['Gemini 1.5 Pro',1000000,MUTE,false]];
-  // gridlines
-  [1e3,1e4,1e5,1e6].forEach(t=>svg.append('line').attr('x1',x(t)).attr('x2',x(t)).attr('y1',m.t).attr('y2',H-m.b).attr('stroke',LINE).attr('opacity',.5));
-  [25,50,75,100].forEach(t=>svg.append('line').attr('x1',m.l).attr('x2',W-m.r).attr('y1',y(t)).attr('y2',y(t)).attr('stroke',LINE).attr('opacity',.4));
-  // bars from 0 (left edge approx) to value
-  refs.forEach(([nm,v,c,me],i)=>{
-    const bx=m.l+4, bw=Math.max(2,x(v)-bx), by=y((i+1)*18)-5;
-    svg.append('rect').attr('x',bx).attr('y',by).attr('width',bw).attr('height',10).attr('rx',2).attr('fill',c).attr('opacity',me?1:.55);
-    svg.append('text').attr('x',bx+bw+8).attr('y',by+9).attr('fill',c).attr('font-family','JetBrains Mono').attr('font-size',11).text(nm+'  '+v.toLocaleString());
+  const x=d3.scaleLog().domain([800,2.2e6]).range([m.l,W-m.r]);
+  // [name, nominal/functional tokens, measured-by-us?]
+  const refs=[['AFM · measured',4037,true],['Llama 3.2 3B',128000,false],['GPT-4o',128000,false],['Claude Sonnet 4',200000,false],['Gemini 1.5 Pro',1000000,false]];
+  const rowH=(H-m.t-m.b)/refs.length;
+  // meaningful decade gridlines (1k / 10k / 100k / 1M)
+  [1e3,1e4,1e5,1e6].forEach(t=>svg.append('line').attr('x1',x(t)).attr('x2',x(t)).attr('y1',m.t-6).attr('y2',H-m.b).attr('stroke',LINE).attr('stroke-dasharray','2 3').attr('opacity',.45));
+  refs.forEach(([nm,v,me],i)=>{
+    const cy=m.t+rowH*(i+0.5);
+    const col=me?AMBER:MUTE;
+    // leader from axis to the dot
+    svg.append('line').attr('x1',m.l).attr('x2',x(v)).attr('y1',cy).attr('y2',cy).attr('stroke',col).attr('stroke-width',me?2:1).attr('opacity',me?.9:.28);
+    // dot (measured = larger, ringed)
+    svg.append('circle').attr('cx',x(v)).attr('cy',cy).attr('r',me?7:4).attr('fill',col).attr('opacity',me?1:.65).attr('stroke',me?'#0c0d0b':'none').attr('stroke-width',2);
+    // row label on the left
+    svg.append('text').attr('x',m.l-12).attr('y',cy+4).attr('text-anchor','end').attr('fill',me?CREAM:DIM).attr('font-family','JetBrains Mono').attr('font-size',11).attr('font-weight',me?700:400).text(nm);
+    if(me){
+      svg.append('text').attr('x',x(v)+14).attr('y',cy+5).attr('fill',AMBER).attr('font-family','Fraunces').attr('font-weight',900).attr('font-size',22).text('4,037');
+      svg.append('text').attr('x',x(v)+14).attr('y',cy+19).attr('fill',MUTE).attr('font-family','JetBrains Mono').attr('font-size',9).text('measured');
+    } else {
+      svg.append('text').attr('x',x(v)+10).attr('y',cy+4).attr('fill',DIM).attr('font-family','JetBrains Mono').attr('font-size',10).text(v>=1e6?(v/1e6)+'M':Math.round(v/1e3)+'k');
+    }
   });
-  svg.append('g').attr('transform',`translate(0,${H-m.b})`).call(d3.axisBottom(x).ticks(4,t=>t>=1e6?(t/1e6)+'M':t>=1e3?(t/1e3)+'k':t).tickSize(0)).call(g=>g.select('.domain').remove());
-  svg.append('g').attr('transform',`translate(${m.l},0)`).call(d3.axisLeft(y).ticks(0).tickSize(0)).call(g=>g.select('.domain').attr('stroke',LINE));
-  svg.append('text').attr('x',W/2).attr('y',H-6).attr('text-anchor','middle').attr('fill',DIM).attr('font-family','JetBrains Mono').attr('font-size',10).text('context window (tokens, log scale)');
+  svg.append('g').attr('transform',`translate(0,${H-m.b})`).call(d3.axisBottom(x).ticks(4,t=>t>=1e6?(t/1e6)+'M':t>=1e3?(t/1e3)+'k':t).tickSize(0)).call(g=>g.select('.domain').attr('stroke',LINE));
+  svg.append('text').attr('x',W/2).attr('y',H-8).attr('text-anchor','middle').attr('fill',DIM).attr('font-family','JetBrains Mono').attr('font-size',10).text('context window (tokens, log scale) · amber = measured here · grey dots = vendor nominal max');
 }
 function prefillChart(){
   const el=document.getElementById('preChart'); el.innerHTML='';
@@ -461,14 +484,14 @@ function renderMatrix(){
   let html=`<div class="hd">${L==='th'?'งาน':'Task'}</div>
     <div class="hd">${L==='th'?'คำตัดสิน':'Verdict'}</div>
     <div class="hd">evidence</div>
-    <div class="hd">${L==='th'?'ความมั่นใจ':'confidence'}</div>`;
+    <div class="hd">${L==='th'?'เหมาะ /5':'fit /5'}</div>`;
   T[lang].tasks.forEach((t,i)=>{
     const [v,ev,n]=V[i];
     const dots=Array.from({length:5},(_,k)=>`<span class="pill ${k<n?'cls':''}" style="${k<n?'':'opacity:.18'}"></span>`.replace('cls',cls[v])).join('');
     html+=`<div class="task">${t}</div>
       <div class="cell"><div class="dotrow"><span class="pill ${cls[v]}"></span><span class="verdict ${cls[v]}">${T.verdict[lang][v]}</span></div></div>
       <div class="cell mono" style="color:var(--mute);font-size:11px">${ev}</div>
-      <div class="cell">${dots} <span class="n">n=${n}</span></div>`;
+      <div class="cell">${dots} <span class="n">${n}/5</span></div>`;
   });
   document.getElementById('matrix').innerHTML=html;
 }
