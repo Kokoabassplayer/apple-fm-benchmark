@@ -1,0 +1,101 @@
+{
+  "inference_window": {
+    "bytes_delta_en0_out": 63325,
+    "gen_wall_s": 22.67,
+    "processes": {
+      "mDNSResponder": {
+        "bytes_in_delta": 6566,
+        "bytes_out_delta": 2542
+      },
+      "Spotify": {
+        "bytes_in_delta": 2815,
+        "bytes_out_delta": 1011
+      },
+      "Arc": {
+        "bytes_in_delta": 143,
+        "bytes_out_delta": 130
+      },
+      "Spotify Helper": {
+        "bytes_in_delta": 15132,
+        "bytes_out_delta": 15106
+      },
+      "Browser Helper": {
+        "bytes_in_delta": 224,
+        "bytes_out_delta": 0
+      },
+      "2.1.165": {
+        "bytes_in_delta": 24,
+        "bytes_out_delta": 24
+      },
+      "Codex (Service)": {
+        "bytes_in_delta": 27392,
+        "bytes_out_delta": 14026
+      },
+      "codex": {
+        "bytes_in_delta": 2280,
+        "bytes_out_delta": 1056
+      },
+      "ChatGPT": {
+        "bytes_in_delta": 6484,
+        "bytes_out_delta": 17055
+      }
+    },
+    "flagged_model_related": [],
+    "process_count": 9
+  },
+  "idle_window": {
+    "bytes_delta_en0_out": 45983,
+    "gen_wall_s": null,
+    "processes": {
+      "mDNSResponder": {
+        "bytes_in_delta": 2886,
+        "bytes_out_delta": 1300
+      },
+      "exchangesyncd": {
+        "bytes_in_delta": 1149,
+        "bytes_out_delta": 52
+      },
+      "Spotify": {
+        "bytes_in_delta": 172,
+        "bytes_out_delta": 224
+      },
+      "Arc": {
+        "bytes_in_delta": 143,
+        "bytes_out_delta": 130
+      },
+      "Spotify Helper": {
+        "bytes_in_delta": 3692,
+        "bytes_out_delta": 5022
+      },
+      "Browser Helper": {
+        "bytes_in_delta": 73,
+        "bytes_out_delta": 0
+      },
+      "Codex (Service)": {
+        "bytes_in_delta": 33244,
+        "bytes_out_delta": 17533
+      },
+      "codex": {
+        "bytes_in_delta": 2971,
+        "bytes_out_delta": 1272
+      },
+      "ChatGPT": {
+        "bytes_in_delta": 1362,
+        "bytes_out_delta": 10683
+      },
+      "com.apple.geod": {
+        "bytes_in_delta": 6004,
+        "bytes_out_delta": 794
+      }
+    },
+    "flagged_model_related": [],
+    "process_count": 10
+  },
+  "differential_excess_bytes_out": 17342,
+  "honest_summary": {
+    "model_related_processes_seen": [],
+    "excess_vs_idle": 17342,
+    "interpretation": "Differential en0 outbound bytes = inference-window minus idle-window. A small/zero excess with NO model-related process in nettop is evidence (not proof) of on-device privacy. Proving offline requires disabling the network (manual wifi test)."
+  },
+  "methodology": "netstat -ib en0 Obytes delta + nettop -P -x -J bytes_in,bytes_out -t external -L 45 during a ~24s greedy generation vs equal idle. en0 bytes are total-interface (background services contribute); only the differential excess is attributable to the activity window."
+}

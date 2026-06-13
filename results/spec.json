@@ -1,0 +1,27 @@
+{
+  "machine": {
+    "model_name": "MacBook Pro",
+    "model_identifier": "Mac15,6",
+    "chip": "Apple M3 Pro",
+    "cores_total": "11",
+    "cores_performance": "5",
+    "cores_efficiency": "6",
+    "memory": "18 GB"
+  },
+  "os": {
+    "product": "macOS",
+    "version": "27.0",
+    "build": "26A5353q"
+  },
+  "fm_cli": {
+    "path": "/usr/bin/fm",
+    "build_mtime_utc_guess": "2026-06-06 06:13:06",
+    "size_bytes": 2153936,
+    "note": "fm has no --version flag; binary path + mtime + macOS build identify it",
+    "availability": "Error: \u001b[38;2;255;107;128mPCC inference is not available in this context.\u001b[0m\nSystem model available"
+  },
+  "runtime": {
+    "python": "Python 3.14.3"
+  },
+  "measured_at_utc": "2026-06-13T13:36:07Z"
+}

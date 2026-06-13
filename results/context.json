@@ -1,0 +1,216 @@
+{
+  "ceiling": {
+    "functional_ceiling_tokens": 4037,
+    "runs": [
+      {
+        "target": 500,
+        "actual": 554,
+        "ok": true,
+        "refused": false,
+        "ctx_err": false,
+        "rc": 0,
+        "wall": 0.82,
+        "out": "1482",
+        "err": ""
+      },
+      {
+        "target": 1000,
+        "actual": 1048,
+        "ok": true,
+        "refused": false,
+        "ctx_err": false,
+        "rc": 0,
+        "wall": 1.19,
+        "out": "1482",
+        "err": ""
+      },
+      {
+        "target": 2000,
+        "actual": 2050,
+        "ok": true,
+        "refused": false,
+        "ctx_err": false,
+        "rc": 0,
+        "wall": 2.09,
+        "out": "1482",
+        "err": ""
+      },
+      {
+        "target": 3000,
+        "actual": 3046,
+        "ok": true,
+        "refused": false,
+        "ctx_err": false,
+        "rc": 0,
+        "wall": 3.37,
+        "out": "1482",
+        "err": ""
+      },
+      {
+        "target": 4000,
+        "actual": 4037,
+        "ok": true,
+        "refused": false,
+        "ctx_err": false,
+        "rc": 0,
+        "wall": 4.51,
+        "out": "1482",
+        "err": ""
+      },
+      {
+        "target": 4800,
+        "actual": 4802,
+        "ok": false,
+        "refused": false,
+        "ctx_err": true,
+        "rc": 1,
+        "out": "",
+        "err": "context size exceeded"
+      },
+      {
+        "target": 4419,
+        "actual": 4465,
+        "ok": false,
+        "refused": false,
+        "ctx_err": true,
+        "rc": 1
+      },
+      {
+        "target": 4228,
+        "actual": 4190,
+        "ok": false,
+        "refused": false,
+        "ctx_err": true,
+        "rc": 1
+      },
+      {
+        "target": 4132,
+        "actual": 4179,
+        "ok": false,
+        "refused": false,
+        "ctx_err": true,
+        "rc": 1
+      }
+    ],
+    "bracket": {
+      "largest_ok_actual": 4037,
+      "first_fail_actual": 4179,
+      "note": "binary-searched [4037,4802]; ok<=4037, fail>=4179"
+    }
+  },
+  "recall_curve": {
+    "lengths": [
+      512,
+      1024,
+      2048,
+      3000
+    ],
+    "curve": [
+      {
+        "total_tokens": 554,
+        "recalled": 3,
+        "of": 3,
+        "recall_fraction": 1.0,
+        "needles": [
+          {
+            "key": "harbor",
+            "question": "What is the name of the harbor master? Answer with just the name.",
+            "answer": "Caldwell",
+            "ok": true
+          },
+          {
+            "key": "tax",
+            "question": "What is the market tax rate, in percent? Answer with just the number.",
+            "answer": "7",
+            "ok": true
+          },
+          {
+            "key": "festival",
+            "question": "On what day does the autumn festival begin? Answer with just the number.",
+            "answer": "The autumn festival always begins on the",
+            "ok": true
+          }
+        ]
+      },
+      {
+        "total_tokens": 1061,
+        "recalled": 3,
+        "of": 3,
+        "recall_fraction": 1.0,
+        "needles": [
+          {
+            "key": "harbor",
+            "question": "What is the name of the harbor master? Answer with just the name.",
+            "answer": "Caldwell",
+            "ok": true
+          },
+          {
+            "key": "tax",
+            "question": "What is the market tax rate, in percent? Answer with just the number.",
+            "answer": "7",
+            "ok": true
+          },
+          {
+            "key": "festival",
+            "question": "On what day does the autumn festival begin? Answer with just the number.",
+            "answer": "The autumn festival always begins on the",
+            "ok": true
+          }
+        ]
+      },
+      {
+        "total_tokens": 2087,
+        "recalled": 3,
+        "of": 3,
+        "recall_fraction": 1.0,
+        "needles": [
+          {
+            "key": "harbor",
+            "question": "What is the name of the harbor master? Answer with just the name.",
+            "answer": "Caldwell",
+            "ok": true
+          },
+          {
+            "key": "tax",
+            "question": "What is the market tax rate, in percent? Answer with just the number.",
+            "answer": "7",
+            "ok": true
+          },
+          {
+            "key": "festival",
+            "question": "On what day does the autumn festival begin? Answer with just the number.",
+            "answer": "19",
+            "ok": true
+          }
+        ]
+      },
+      {
+        "total_tokens": 3037,
+        "recalled": 3,
+        "of": 3,
+        "recall_fraction": 1.0,
+        "needles": [
+          {
+            "key": "harbor",
+            "question": "What is the name of the harbor master? Answer with just the name.",
+            "answer": "Caldwell",
+            "ok": true
+          },
+          {
+            "key": "tax",
+            "question": "What is the market tax rate, in percent? Answer with just the number.",
+            "answer": "7",
+            "ok": true
+          },
+          {
+            "key": "festival",
+            "question": "On what day does the autumn festival begin? Answer with just the number.",
+            "answer": "19",
+            "ok": true
+          }
+        ]
+      }
+    ]
+  },
+  "methodology": "Ceiling = largest input where the model retrieves a final needle (binary search, guardrail-safe filler, refusal vs context-error distinguished). Recall = 3 facts at 30/60/90% of docs of [512, 1024, 2048, 3000] tokens, queried separately; recall_fraction = correct/3. Greedy. Ceiling=can-FIT; recall=can-RETRIEVE."
+}

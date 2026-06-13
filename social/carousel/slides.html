@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AFM bench — Thai carousel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Hanken+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+Thai:wght@500;700;900&family=Noto+Serif+Thai:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0c0d0b;--bg:#101211;--cream:#f3efe4;--mute:#9aa097;--dim:#5e635d;--amber:#e6a745;--green:#7fc97f;--red:#e06a5a;
+  --serif:'Fraunces','Noto Serif Thai',Georgia,serif;--sans:'Hanken Grotesk','Noto Sans Thai',sans-serif;--mono:'JetBrains Mono',monospace;--th:'Noto Sans Thai',sans-serif;--ths:'Noto Serif Thai',serif;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;font-family:var(--th)}
+.slide{width:1080px;height:1080px;background:var(--ink);color:var(--cream);position:relative;overflow:hidden;
+  padding:88px 92px;display:flex;flex-direction:column;
+  background-image:radial-gradient(900px 520px at 88% -8%,rgba(230,167,69,.10),transparent 60%),radial-gradient(700px 420px at -8% 108%,rgba(127,201,127,.05),transparent 60%);}
+.brand{position:absolute;top:46px;left:92px;font-family:var(--serif);font-weight:700;font-size:26px;letter-spacing:.2px}
+.brand .dot{color:var(--amber)}
+.pageno{position:absolute;top:50px;right:92px;font-family:var(--mono);font-size:16px;color:var(--dim);letter-spacing:.2em}
+.eyebrow{font-family:var(--mono);font-size:18px;color:var(--amber);letter-spacing:.26em;text-transform:uppercase;margin-top:78px;margin-bottom:34px}
+h1.big{font-family:var(--ths);font-weight:900;font-size:104px;line-height:1.04;letter-spacing:-.01em}
+h1.big em{font-style:normal;color:var(--amber)}
+h2.mid{font-family:var(--ths);font-weight:800;font-size:78px;line-height:1.08;letter-spacing:-.01em;margin-bottom:30px}
+h2.mid em{font-style:normal;color:var(--amber)}
+.lede{font-size:33px;color:var(--mute);line-height:1.5;margin-top:34px;max-width:30ch}
+.lede b{color:var(--cream);font-weight:700}
+.foot{position:absolute;bottom:60px;left:92px;right:92px;font-family:var(--mono);font-size:17px;color:var(--dim);display:flex;justify-content:space-between;gap:20px}
+.foot a,.foot .link{color:var(--amber);text-decoration:none}
+.metric{display:flex;align-items:baseline;gap:18px;margin-bottom:8px}
+.metric .num{font-family:var(--serif);font-weight:900;font-size:150px;line-height:.9;color:var(--amber)}
+.metric .num.g{color:var(--green)}
+.metric .unit{font-family:var(--mono);font-size:34px;color:var(--mute)}
+.cap{font-size:30px;color:var(--mute);margin-bottom:50px}
+.twocol{display:flex;gap:40px;margin-top:20px}
+.twocol .col{flex:1}
+.twocol .col .lab{font-family:var(--mono);font-size:18px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px}
+.twocol .col .v{font-family:var(--serif);font-weight:900;font-size:96px;line-height:.95;color:var(--cream)}
+.twocol .col.amber .v{color:var(--amber)}
+.twocol .col.green .v{color:var(--green)}
+.twocol .col .sub{font-size:24px;color:var(--mute);margin-top:8px}
+.badge{display:inline-block;border:1px solid var(--line,#2c302a);border-radius:999px;padding:12px 24px;font-family:var(--mono);font-size:19px;color:var(--cream);margin:6px 10px 6px 0}
+.badge .a{color:var(--amber)}
+.taggreen{color:var(--green);font-family:var(--mono);font-size:24px;font-weight:700}
+.dots{display:flex;gap:10px;margin:22px 0 8px}
+.dots i{width:46px;height:46px;border-radius:50%;background:var(--bg);border:2px solid #2c302a}
+.dots i.on{background:var(--green);border-color:var(--green)}
+.verdict{font-family:var(--ths);font-weight:800;font-size:54px;line-height:1.3}
+.scores{display:flex;gap:30px;margin-top:14px}
+.scores .s{flex:1;background:var(--bg);border:1px solid #2c302a;border-radius:22px;padding:34px 28px}
+.scores .s .t{font-family:var(--mono);font-size:17px;color:var(--dim);letter-spacing:.1em}
+.scores .s .p{font-family:var(--serif);font-weight:900;font-size:78px;color:var(--amber);line-height:1;margin-top:14px}
+.scores .s .n{font-family:var(--mono);font-size:16px;color:var(--mute);margin-top:10px}
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1 : HOOK -->
+<section class="slide" id="s1">
+  <div class="brand">AFM<span class="dot">·</span>bench</div>
+  <div class="pageno">01 / 06</div>
+  <div class="eyebrow">วัดจริง · ออนดีไวซ์ · macOS 27</div>
+  <h1 class="big">มี<em>โมเดล AI ใหม่</em><br>อยู่ใน Mac ของคุณ<br><em>— เราวัดมันแล้ว</em></h1>
+  <div class="lede">เปิดเครื่องมาใช้ได้เลย ไม่ต้อง API key ไม่ต้องเน็ต ไม่มีค่าใช้จ่ายต่อโทเคน</div>
+  <div class="foot"><span>Apple M3 Pro · 11 คอร์ · 18GB · macOS 27.0</span><span class="link">kokoabassplayer.github.io/apple-fm-benchmark</span></div>
+</section>
+
+<!-- SLIDE 2 : WHAT -->
+<section class="slide" id="s2">
+  <div class="brand">AFM<span class="dot">·</span>bench</div>
+  <div class="pageno">02 / 06</div>
+  <div class="eyebrow">มันคืออะไร</div>
+  <h2 class="mid">โมเดล<em>ในเครื่อง</em><br>ไม่ใช่คลาวด์</h2>
+  <div style="margin-top:34px">
+    <div class="badge">ไม่ต้อง <span class="a">API key</span></div>
+    <div class="badge">ไม่ต้อง <span class="a">เชื่อมเน็ต</span></div>
+    <div class="badge">ไม่มี <span class="a">ค่าใช้จ่าย</span></div>
+    <div class="badge">เรียกจาก <span class="a">command line</span></div>
+  </div>
+  <div class="lede" style="margin-top:44px">เป็นมาตรฐานเปิดที่<b>ทำซ้ำได้</b> — ทุกตัวเลขวัดจากเครื่องจริง และคุณเองก็รันบนเครื่องคุณได้</div>
+  <div class="foot"><span>fm CLI · /usr/bin/fm</span><span class="link">github.com/kokoabassplayer/apple-fm-benchmark</span></div>
+</section>
+
+<!-- SLIDE 3 : CONTEXT -->
+<section class="slide" id="s3">
+  <div class="brand">AFM<span class="dot">·</span>bench</div>
+  <div class="pageno">03 / 06</div>
+  <div class="eyebrow">CONTEXT WINDOW</div>
+  <div class="metric"><span class="num">~4k</span><span class="unit">โทเคนที่ใช้ได้จริง</span></div>
+  <div class="cap">และที่สำคัญ — มัน<em style="color:var(--amber);font-style:normal">จำได้จริง</em></div>
+  <h2 class="mid" style="font-size:60px;margin-top:10px">ดึงข้อมูลกลางเอกสาร<br>ได้<em>100%</em></h2>
+  <div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+  <div class="cap">9/9 needles · 4 ระดับความยาว สูงสุด 3,000 โทเคน</div>
+  <div class="foot"><span>binary-search ceiling 4,037 → 4,179 hard error</span><span>ค้นแบบ binary search + multi-needle recall</span></div>
+</section>
+
+<!-- SLIDE 4 : SPEED -->
+<section class="slide" id="s4">
+  <div class="brand">AFM<span class="dot">·</span>bench</div>
+  <div class="pageno">04 / 06</div>
+  <div class="eyebrow">ความเร็ว — สองความเร็ว</div>
+  <h2 class="mid" style="font-size:60px">"tokens/sec" ตัวเดียว<br>โกหกคุณ</h2>
+  <div class="twocol">
+    <div class="col amber"><div class="lab">อ่าน · PREFILL</div><div class="v">967</div><div class="unit" style="font-family:var(--mono);font-size:26px;color:var(--mute)">tok/s · รับ prompt</div></div>
+    <div class="col green"><div class="lab">เขียน · DECODE</div><div class="v">71</div><div class="unit" style="font-family:var(--mono);font-size:26px;color:var(--mute)">tok/s · สร้างคำตอบ</div></div>
+  </div>
+  <div class="lede" style="margin-top:40px">วัดจาก<b>ถดถอยเชิงเส้น</b> ไม่ใช่จับเวลาจุดเดียว — ค่าโทเคนแรกอุ่น ~0.42 วินาที</div>
+  <div class="foot"><span>prefill = slope(ttft vs input) · decode = slope(wall vs output)</span><span>r²≈0.99</span></div>
+</section>
+
+<!-- SLIDE 5 : PRIVACY -->
+<section class="slide" id="s5">
+  <div class="brand">AFM<span class="dot">·</span>bench</div>
+  <div class="pageno">05 / 06</div>
+  <div class="eyebrow">ความเป็นส่วนตัว</div>
+  <div class="metric"><span class="num g">0</span><span class="unit">โพรเซสของโมเดล<br>ที่ส่งข้อมูลออกเครื่อง</span></div>
+  <div class="cap">ระหว่างสร้างคำตอบ 24 วินาที</div>
+  <div style="margin-top:26px;font-family:var(--mono);font-size:23px;color:var(--mute);line-height:1.9">
+    <span style="color:var(--cream)">ChatGPT · Spotify · Codex · mDNSResponder</span><br>
+    <span style="color:var(--dim)">= แอปพื้นหลังทั้งหมด ไม่ใช่โมเดล</span><br>
+    <span class="taggreen">model-related traffic: 0</span>
+  </div>
+  <div class="lede" style="margin-top:30px;font-size:26px">differential en0 bytes อยู่ในระดับ<b>noise</b> (สลับเครื่องหมายทุกครั้งที่รัน)</div>
+  <div class="foot"><span>nettop + netstat delta · inference vs idle</span><span>พิสูจน์ออฟไลน์เต็มรูปแบบ = ปิด Wi-Fi</span></div>
+</section>
+
+<!-- SLIDE 6 : VERDICT + LINKS -->
+<section class="slide" id="s6">
+  <div class="brand">AFM<span class="dot">·</span>bench</div>
+  <div class="pageno">06 / 06</div>
+  <div class="eyebrow">บทสรุป</div>
+  <div class="verdict">โมเดล<em style="font-style:normal;color:var(--amber)">ในเครื่อง</em>ที่ใช้งานได้จริง<br>เร็ว · เป็นส่วนตัว · ฟรี<br>แต่<em style="font-style:normal;color:var(--red)">ไม่ใช่ GPT-4</em></div>
+  <div style="margin-top:30px;font-size:27px;color:var(--mute);line-height:1.5"><span class="taggreen">เหมาะ:</span> สรุป ร่างอีเมล แก้ข้อความ ผู้ช่วยเขียนโค้ด<br><span style="color:var(--red);font-family:var(--mono);font-size:22px">ไม่เหมาะ:</span> เอกสารยาวเกิน 3k โทเคน · คณิตระดับสูง</div>
+  <div class="scores" id="cslide-scores">
+    <div class="s"><div class="t">GSM8K</div><div class="p" id="cs-gsm">—</div><div class="n">เลข 300 ข้อ</div></div>
+    <div class="s"><div class="t">HUMANEVAL</div><div class="p" id="cs-he">—</div><div class="n">โค้ด 164 ข้อ</div></div>
+    <div class="s"><div class="t">MMLU</div><div class="p" id="cs-mmlu">—</div><div class="n">รู้รอบ 500 ข้อ</div></div>
+  </div>
+  <div class="foot"><span class="link">kokoabassplayer.github.io/apple-fm-benchmark</span><span class="link">github.com/kokoabassplayer/apple-fm-benchmark</span></div>
+</section>
+
+<script>
+// suite scores injected at render time from results/all.json
+if(window.fetch){ fetch('../../results/all.json').then(r=>r.ok?r.json():null).then(j=>{
+  if(!j||!j.suites) return;
+  const g=j.suites.gsm8k, h=j.suites.humaneval, m=j.suites.mmlu;
+  if(g&&g.accuracy!=null) document.getElementById('cs-gsm').textContent=(g.accuracy*100).toFixed(0)+'%';
+  if(h&&h.pass_at_1!=null) document.getElementById('cs-he').textContent=(h.pass_at_1*100).toFixed(0)+'%';
+  if(m&&m.accuracy!=null) document.getElementById('cs-mmlu').textContent=(m.accuracy*100).toFixed(0)+'%';
+}).catch(()=>{}); }
+</script>
+</body>
+</html>

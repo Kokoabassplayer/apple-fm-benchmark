@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Re-downloadable / redundant data artifacts (NOT vendored):
+#   mmlu_test.parquet is the raw HF source; bench/mmlu.py reads the vendored
+#   mmlu_test.csv instead, so the parquet is excluded to keep the repo lean.
+bench/data/mmlu_test.parquet
+
+# Local screenshots / shots are generated, not source
+social/shots/*.png
+
+# Local run logs (contain absolute paths; final numbers live in results/*.json)
+*.log

@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apple Foundation Models — On-Device Benchmark (M3 Pro, macOS 27)</title>
+<meta name="description" content="A reproducible, data-driven benchmark of the on-device Apple Foundation Models model (macOS 27) on an M3 Pro MacBook Pro: context window, prefill & decode speed, multi-needle recall, network privacy, and standard accuracy suites (GSM8K, HumanEval, MMLU). Run it on your own Mac.">
+<meta name="keywords" content="Apple Foundation Models, Apple Intelligence, on-device LLM, macOS 27 benchmark, M3 Pro, GSM8K, HumanEval, MMLU, fm CLI, local AI benchmark">
+<meta name="author" content="kokoabassplayer">
+<meta property="og:title" content="Apple Foundation Models — On-Device Benchmark">
+<meta property="og:description" content="How fast & how smart is the new on-device model inside macOS 27? Measured on an M3 Pro. Reproducible. Bilingual EN/TH.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230c0d0b'/%3E%3Ctext x='50' y='72' font-size='62' text-anchor='middle' font-family='Georgia,serif' font-weight='900' fill='%23e6a745'%3EA%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=Hanken+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+Thai:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<style>
+:root{
+  --ink:#0c0d0b; --panel:#14161300; --panel-bg:#161814; --panel-2:#1d201b;
+  --line:#2c302a; --cream:#f3efe4; --mute:#9aa097; --dim:#6b716a;
+  --amber:#e6a745; --green:#7fc97f; --red:#e06a5a; --blue:#7fb2e0;
+  --serif:'Fraunces',Georgia,serif; --sans:'Hanken Grotesk',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace; --thai:'Noto Sans Thai','Hanken Grotesk',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--cream);font-family:var(--sans);line-height:1.55;
+  background-image:radial-gradient(1200px 600px at 80% -10%,rgba(230,167,69,.07),transparent 60%),radial-gradient(900px 500px at -10% 30%,rgba(127,201,127,.04),transparent 60%);}
+.wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+.mono{font-family:var(--mono)}
+.amber{color:var(--amber)} .green{color:var(--green)} .red{color:var(--red)} .mute{color:var(--mute)} .dim{color:var(--dim)}
+
+/* ---- top bar ---- */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(12,13,11,.82);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;gap:18px;padding:12px 28px}
+.brand{font-family:var(--serif);font-weight:700;font-size:15px;letter-spacing:.2px}
+.brand .dot{color:var(--amber)}
+.spacer{flex:1}
+.lang{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;font-family:var(--mono);font-size:12px}
+.lang button{background:transparent;color:var(--mute);border:0;padding:6px 12px;cursor:pointer;font-family:inherit}
+.lang button.on{background:var(--amber);color:#1a1407}
+.repo{font-family:var(--mono);font-size:12px;color:var(--mute);text-decoration:none;border:1px solid var(--line);padding:6px 12px;border-radius:999px}
+.repo:hover{color:var(--cream);border-color:var(--mute)}
+
+/* ---- spec strip ---- */
+.specstrip{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#101210,#0c0d0b)}
+.specstrip .wrap{display:flex;flex-wrap:wrap;gap:0;padding:14px 28px}
+.specitem{padding:2px 22px;border-right:1px solid var(--line);font-family:var(--mono);font-size:12px}
+.specitem:first-child{padding-left:0}
+.specitem:last-child{border-right:0}
+.specitem .k{color:var(--dim);display:block;font-size:10px;text-transform:uppercase;letter-spacing:.12em}
+.specitem .v{color:var(--cream);font-weight:500}
+.specitem .v .amber{font-weight:700}
+
+/* ---- hero ---- */
+.hero{padding:74px 0 50px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.22em;text-transform:uppercase;margin-bottom:18px}
+h1{font-family:var(--serif);font-weight:900;font-size:clamp(34px,6vw,62px);line-height:1.02;letter-spacing:-.015em;margin-bottom:22px}
+h1 em{font-style:italic;font-weight:400;color:var(--amber)}
+.lede{font-size:18px;color:var(--mute);max-width:62ch;margin-bottom:30px}
+.lede strong{color:var(--cream);font-weight:500}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpi{background:var(--panel-bg);border:1px solid var(--line);border-radius:12px;padding:18px 16px}
+.kpi .big{font-family:var(--serif);font-weight:700;font-size:34px;line-height:1;color:var(--amber)}
+.kpi .big .u{font-size:15px;color:var(--mute);font-family:var(--mono);font-weight:500;margin-left:3px}
+.kpi .lab{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-top:8px}
+.kpi .sub{font-size:12px;color:var(--mute);margin-top:3px}
+
+/* ---- sections ---- */
+section{padding:54px 0;border-bottom:1px solid var(--line)}
+.secno{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.2em}
+h2{font-family:var(--serif);font-weight:700;font-size:clamp(26px,3.6vw,38px);letter-spacing:-.01em;margin:6px 0 8px}
+.slede{color:var(--mute);max-width:70ch;font-size:15px;margin-bottom:26px}
+.prov{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:14px;line-height:1.7}
+.prov b{color:var(--amber);font-weight:500}
+
+.chart{background:var(--panel-bg);border:1px solid var(--line);border-radius:14px;padding:20px}
+.chart svg{display:block;width:100%;overflow:visible}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--mute);margin-top:12px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* ---- scores ---- */
+.scores{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.score{background:var(--panel-bg);border:1px solid var(--line);border-radius:14px;padding:22px;position:relative;overflow:hidden}
+.score .tag{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.16em;text-transform:uppercase}
+.score .nm{font-family:var(--serif);font-weight:700;font-size:22px;margin:2px 0 14px}
+.score .pct{font-family:var(--serif);font-weight:900;font-size:46px;line-height:1;color:var(--amber)}
+.score .pct .of{font-family:var(--mono);font-size:13px;color:var(--mute);font-weight:500}
+.score .bar{height:5px;background:var(--panel-2);border-radius:3px;margin-top:14px;overflow:hidden}
+.score .bar i{display:block;height:100%;background:var(--amber)}
+.score .n{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:8px}
+.score.pending{opacity:.6}
+.score.pending .pct{color:var(--dim);font-size:30px}
+
+/* ---- matrix ---- */
+.matrix{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:13px}
+.matrix > div{background:var(--panel-bg);padding:12px 14px}
+.matrix .hd{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.12em;background:#101211}
+.matrix .task{color:var(--cream)}
+.cell{display:flex;flex-direction:column;gap:4px}
+.cell .dotrow{display:flex;align-items:center;gap:8px}
+.cell .verdict{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.04em}
+.cell .n{font-family:var(--mono);font-size:10px;color:var(--dim)}
+.pill{display:inline-block;width:10px;height:10px;border-radius:50%}
+.pill.g{background:var(--green)} .pill.a{background:var(--amber)} .pill.r{background:var(--red)}
+
+/* ---- privacy terminal ---- */
+.term{background:#0a0b09;border:1px solid var(--line);border-radius:12px;padding:18px;font-family:var(--mono);font-size:12px;color:var(--mute);line-height:1.7;overflow-x:auto}
+.term .pr{color:var(--green)} .term .cmt{color:var(--dim)} .term .hi{color:var(--cream)}
+
+/* ---- verdict ---- */
+.verdict-box{background:linear-gradient(135deg,#1a1d18,#141613);border:1px solid var(--line);border-radius:16px;padding:30px}
+.verdict-box p{font-family:var(--serif);font-size:20px;line-height:1.5;color:var(--cream);margin-bottom:14px}
+.verdict-box p:last-child{margin-bottom:0}
+
+ul.clean{list-style:none;display:flex;flex-direction:column;gap:10px}
+ul.clean li{padding-left:20px;position:relative;color:var(--mute);font-size:14px}
+ul.clean li::before{content:'›';position:absolute;left:0;color:var(--amber);font-family:var(--mono)}
+ul.clean li b{color:var(--cream);font-weight:500}
+
+.foot{padding:40px 0 60px;font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.8}
+.foot a{color:var(--mute)}
+@media(max-width:760px){.kpis,.scores,.two{grid-template-columns:1fr 1fr}.matrix{grid-template-columns:1fr 1fr}.specitem{border-right:0;border-bottom:1px solid var(--line);padding:8px 0}}
+:lang(th){font-family:var(--thai)}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <div class="brand">AFM<span class="dot">·</span>bench</div>
+  <div class="spacer"></div>
+  <div class="lang" role="group" aria-label="language">
+    <button id="btn-en" class="on" onclick="setLang('en')">EN</button>
+    <button id="btn-th" onclick="setLang('th')">ไทย</button>
+  </div>
+  <a class="repo" href="https://github.com/kokoabassplayer/apple-fm-benchmark" target="_blank" rel="noopener">repo ↗</a>
+</div></div>
+
+<div class="specstrip"><div class="wrap" id="specstrip"></div></div>
+
+<div class="wrap">
+
+<!-- HERO -->
+<header class="hero">
+  <div class="eyebrow" data-i18n="eyebrow">Field report · on-device · measured</div>
+  <h1 data-i18n-html="h1">There's a new <em>model inside your Mac</em>. We measured it.</h1>
+  <p class="lede" data-i18n="lede">macOS 27 ships an on-device language model you can call from the command line. <strong>No API key, no cloud, no per-token bill.</strong> This is an open, reproducible benchmark of it — every number below was measured on the machine in the spec strip above, and you can re-measure it on yours.</p>
+  <div class="kpis" id="kpis"></div>
+</header>
+
+<!-- 01 CONTEXT -->
+<section id="context">
+  <div class="secno">01 · CONTEXT WINDOW</div>
+  <h2 data-i18n="ctx_h">~4,000 usable tokens — and it actually remembers</h2>
+  <p class="slede" data-i18n="ctx_lede">The hard ceiling (binary-searched) is ~4k tokens. The honest finding is the second part: facts buried in the middle of a 3,000-token document were retrieved <span class="green">9 out of 9 times</span>. It fits the context <em>and</em> understands it.</p>
+  <div class="chart"><div id="ctxChart"></div></div>
+  <div class="prov"><b>Measured</b> (amber): functional ceiling 4,037 tok ok → 4,179 tok hard error; multi-needle recall 3/3 at every length up to 3,000 tok. <b>Reference</b> (grey, vendor-stated, not measured by us): GPT-4o 128k · Claude Sonnet 200k · Gemini 1.5 Pro 1M. Log scale.</div>
+</section>
+
+<!-- 02 SPEED -->
+<section id="speed">
+  <div class="secno">02 · THROUGHPUT — TWO SPEEDS</div>
+  <h2 data-i18n="spd_h">Prefill ~967 tok/s. Decode ~71 tok/s.</h2>
+  <p class="slede" data-i18n="spd_lede">A single "tokens/sec" number lies — this model has two. It <strong>reads</strong> your prompt fast (prefill, ~967 tok/s) but <strong>writes</strong> the answer slower (decode, ~71 tok/s). We separated them with linear regression, not a single stopwatch.</p>
+  <div class="two">
+    <div class="chart"><div id="preChart"></div>
+      <div class="prov"><b>Fit</b>: ttft = 0.054 + 0.00103·n  →  slope = prefill rate. r²≈0.99 across 5 input sizes.</div></div>
+    <div class="chart"><div id="decChart"></div>
+      <div class="prov"><b>Fit</b>: wall = −0.36 + 0.0142·out_tok  →  decode 70.7 tok/s. Per-length: 75 / 73 / 72 tok/s (monotonic, consistent).</div></div>
+  </div>
+</section>
+
+<!-- 03 ACCURACY -->
+<section id="accuracy">
+  <div class="secno">03 · STANDARD ACCURACY SUITES</div>
+  <h2 data-i18n="acc_h">How smart is it, on tests people recognise?</h2>
+  <p class="slede" data-i18n="acc_lede">Vendor marketing numbers are impossible to compare. So we ran the same open suites everyone uses — grade-school math (GSM8K), code generation (HumanEval), and broad knowledge (MMLU). Subset sizes chosen for a ~1-hour run on one Mac.</p>
+  <div class="scores" id="scores"></div>
+  <div class="prov">All greedy (<span class="mono">--greedy</span>) for reproducibility. HumanEval executed in an isolated sandbox (timeout 10s, no network). Scores are <b>not</b> compared to cloud models here — different model class — they're a baseline for <em>this</em> on-device model that others can reproduce on the same chip.</div>
+</section>
+
+<!-- 04 PRIVACY -->
+<section id="privacy">
+  <div class="secno">04 · NETWORK PRIVACY</div>
+  <h2 data-i18n="priv_h">During a 24-second generation, zero model-related traffic</h2>
+  <p class="slede" data-i18n="priv_lede">We can't <em>prove</em> "offline" with a passive probe (background apps always chatter), so we did the honest thing: measured every byte on the interface during inference vs an equal idle window, and listed <strong>which process sent each byte</strong>. None of them were the model.</p>
+  <div class="two">
+    <div class="chart" style="padding:22px">
+      <div class="mono" style="font-size:12px;color:var(--dim)">differential outbound (en0)</div>
+      <div style="font-family:var(--serif);font-weight:900;font-size:48px;color:var(--green);line-height:1.1;margin-top:6px" id="privExcess">+17 KB</div>
+      <div class="mono" style="font-size:11px;color:var(--mute);margin-top:2px">inference − idle (sign flips run-to-run: −2 / −10 / +17 KB → noise)</div>
+      <div style="margin-top:18px;font-size:13px;color:var(--mute)" data-i18n="priv_box">Inference window: 63 KB out · 9 processes. Idle window: 46 KB out · 10 processes. Every process in both windows was an unrelated background app — <span class="green">none was the model</span>. See the evidence →</div>
+    </div>
+    <div class="term">
+<span class="cmt"># nettop -P -x -J bytes_in,bytes_out -t external  (during inference)</span>
+<span class="pr">ChatGPT</span>            out=17055   <span class="cmt"># background app</span>
+<span class="pr">Spotify Helper</span>     out=15106   <span class="cmt"># background app</span>
+<span class="pr">Codex (Service)</span>    out=14026   <span class="cmt"># background app</span>
+<span class="pr">mDNSResponder</span>      out= 2542   <span class="cmt"># system DNS</span>
+<span class="pr">codex</span>              out= 1056
+<span class="pr">Spotify</span>            out= 1011
+<span class="pr">Arc</span>               out=   130
+<span class="hi">fm / FoundationModels / model-related</span>  <span class="red">— NOT FOUND</span>
+<span class="cmt"># model-related external processes observed: 0</span></div>
+  </div>
+  <div class="prov"><b>Honest caveat:</b> a passive probe measures the interface, not the model. The definitive test is disabling Wi-Fi and confirming inference still works — a manual step, not auto-badged. What we <em>can</em> say: no model-related process transmitted, and inference added no traffic beyond idle noise.</div>
+</section>
+
+<!-- 05 USE CASES -->
+<section id="usecases">
+  <div class="secno">05 · WHAT'S IT GOOD FOR?</div>
+  <h2 data-i18n="use_h">A decision guide, not a score</h2>
+  <p class="slede" data-i18n="use_lede">Verdicts below are derived from the measured numbers above (speed, context, accuracy, privacy) — not vibes. Green = well-suited, amber = workable, red = not the right tool.</p>
+  <div class="matrix" id="matrix"></div>
+</section>
+
+<!-- 06 VERDICT -->
+<section id="verdict">
+  <div class="secno">06 · VERDICT</div>
+  <h2 data-i18n="verd_h">The takeaway</h2>
+  <div class="verdict-box">
+    <p data-i18n="verd1">A genuinely useful <em>local</em> model — not a GPT-4 replacement, and it shouldn't be judged as one. Its job is the one it's built for: fast, private, always-on assistance on your own machine.</p>
+    <p data-i18n="verd2"><span class="amber">Strengths:</span> instant cold-ish start, ~0.4s warm first-token, perfect mid-context recall, and the strongest possible privacy story (on-device). <span class="amber">Limits:</span> a ~4k context, ~71 tok/s structured-output decode, and accuracy suited to everyday tasks — not frontier reasoning.</p>
+  </div>
+</section>
+
+<!-- 07 METHOD -->
+<section id="method">
+  <div class="secno">07 · METHOD & LIMITATIONS</div>
+  <h2 data-i18n="meth_h">How to trust (and reproduce) this</h2>
+  <ul class="clean" data-i18n-list="meth_list">
+    <li><b>Spec-labeled.</b> Every number applies to the M3 Pro / 18GB / macOS 27.0 machine in the top strip. A different chip will differ.</li>
+    <li><b>Regression, not stopwatch.</b> Prefill from ttft-vs-input slope; decode from wall-vs-output slope. Single-point "tokens/sec" is misleading and we don't report it.</li>
+    <li><b>Open harness.</b> <span class="mono">bench/run_all.py</span> re-runs everything. Datasets (GSM8K, HumanEval, MMLU) are downloaded and scored locally; licenses noted in the repo.</li>
+    <li><b>Measured vs reference split.</b> Amber = we measured it on this Mac. Grey = vendor-stated marketing figures, included for scale, not for comparison of like-for-like.</li>
+    <li><b>"3B" unconfirmed.</b> Apple does not publish the parameter count; we don't assert it. Everything else is measured directly.</li>
+    <li><b>Privacy is evidence, not proof.</b> We observed no model traffic; proving fully-offline needs the Wi-Fi-off test.</li>
+  </ul>
+</section>
+
+<footer class="foot">
+  <p>Apple Foundation Models on-device benchmark · measured on Apple M3 Pro, macOS 27.0 (build 26A5353q).</p>
+  <p>Raw data + reproducible harness: <a href="https://github.com/kokoabassplayer/apple-fm-benchmark" target="_blank" rel="noopener">github.com/kokoabassplayer/apple-fm-benchmark</a> · run <span class="mono">bench/run_all.py</span> on your Mac.</p>
+  <p style="margin-top:14px;color:var(--dim)">GSM8K (MIT) · HumanEval (MIT) · MMLU (MIT). No affiliation with Apple. Independent measurement.</p>
+</footer>
+
+</div><!-- /wrap -->
+
+<script>
+/* ---------- embedded measured data (results/all.json snapshot) ---------- */
+const DATA = {
+  spec:{ chip:"Apple M3 Pro", model:"MacBook Pro (Mac15,6)", cores:"11 (5P+6E)", ram:"18 GB",
+         os:"macOS 27.0", build:"26A5353q", fm:"/usr/bin/fm", fm_build:"2026-06-06", measured:"2026-06-13 UTC" },
+  latency:{
+    prefill_tps:967, prefill_fit:{slope:0.00103,intercept:0.054},
+    prefill_points:[{n:256,ttft:0.417},{n:512,ttft:0.614},{n:1024,ttft:1.054},{n:2048,ttft:2.045},{n:3072,ttft:3.347}],
+    decode_tps:70.7, decode_fit:{slope:0.01415,intercept:-0.362},
+    decode_points:[{tok:380,wall:5.062},{tok:900,wall:12.295},{tok:1700,wall:23.725}],
+    warm_ttft_p50:0.42, cold_ttft:2.55
+  },
+  context:{ ceiling:4037, ceiling_fail:4179,
+            recall:[{tok:512,r:1.0},{tok:1024,r:1.0},{tok:2048,r:1.0},{tok:3000,r:1.0}] },
+  privacy:{ inference_out:63325, idle_out:45983, excess:17342, runs_excess:[-2013,-10955,17342],
+            model_procs:0, inference_procs:9, idle_procs:10 },
+  suites:{ gsm8k:{accuracy:0.8133,n:300,correct:244}, humaneval:{pass_at_1:0.5488,n:164,passed:90}, mmlu:{accuracy:0.6004,n:513,correct:308} }
+};
+/* fetch fresher committed data if present (re-run-and-commit workflow).
+   Narrow contract: only the suites block (the part that varies run-to-run and
+   machine-to-machine) is overridden from all.json; latency/context/privacy stay
+   embedded because their raw JSON is richer and we curate the flat fields. */
+if(window.fetch){ fetch('results/all.json').then(r=>r.ok?r.json():null).then(j=>{
+  if(j && j.suites){ DATA.suites = j.suites; if(typeof renderDynamic==='function') renderDynamic(); }
+}).catch(()=>{}); }
+
+/* ---------- bilingual strings ---------- */
+const I18N = {
+  eyebrow:{en:"Field report · on-device · measured",th:"รายงานภาคสนาม · ออนดีไวซ์ · วัดจริง"},
+  h1:{en:"There's a new <em>model inside your Mac</em>. We measured it.",
+      th:"มี <em>โมเดลใหม่อยู่ใน Mac ของคุณ</em> — เราวัดมันแล้ว"},
+  lede:{en:"macOS 27 ships an on-device language model you can call from the command line. <strong>No API key, no cloud, no per-token bill.</strong> This is an open, reproducible benchmark of it — every number below was measured on the machine in the spec strip above, and you can re-measure it on yours.",
+        th:"macOS 27 มาพร้อมโมเดลภาษาออนดีไวซ์ที่เรียกจาก command line ได้ <strong>ไม่ต้องใช้ API key ไม่ต้องเชื่อมคลาวด์ ไม่มีค่าใช้จ่ายต่อโทเคน</strong> นี่คือเกณฑ์มาตรฐานแบบเปิดที่ทำซ้ำได้ — ทุกตัวเลขด้านล่างวัดจากเครื่องในแถบสเปกด้านบน และคุณเองก็วัดบนเครื่องคุณได้"},
+  ctx_h:{en:"~4,000 usable tokens — and it actually remembers",th:"~4,000 โทเคนที่ใช้ได้จริง — และมันจำได้จริง"},
+  ctx_lede:{en:"The hard ceiling (binary-searched) is ~4k tokens. The honest finding is the second part: facts buried in the middle of a 3,000-token document were retrieved <span class='green'>9 out of 9 times</span>. It fits the context <em>and</em> understands it.",
+            th:"ขีดจำกัดสูงสุด (ค้นแบบ binary search) อยู่ที่ ~4k โทเคน ส่วนที่ต้องรู้คือประเด็นที่สอง: ข้อมูลที่ซ่อนอยู่กลางเอกสาร 3,000 โทเคนถูกดึงออกมาได้ <span class='green'>9 จาก 9 ครั้ง</span> มันพอดีกับ context <em>และ</em>เข้าใจมัน"},
+  spd_h:{en:"Prefill ~967 tok/s. Decode ~71 tok/s.",th:"Prefill ~967 tok/s · Decode ~71 tok/s"},
+  spd_lede:{en:"A single \"tokens/sec\" number lies — this model has two. It <strong>reads</strong> your prompt fast (prefill, ~967 tok/s) but <strong>writes</strong> the answer slower (decode, ~71 tok/s). We separated them with linear regression, not a single stopwatch.",
+            th:"ตัวเลข \"tokens/sec\" ตัวเดียวโกหคุ — โมเดลนี้มีสองความเร็ว มัน<strong>อ่าน</strong> prompt ของคุณเร็ว (prefill ~967 tok/s) แต่<strong>เขียน</strong>คำตอบช้ากว่า (decode ~71 tok/s) เราแยกสองค่านี้ด้วยการถดถอยเชิงเส้น ไม่ใช่จับเวลาแบบจุดเดียว"},
+  acc_h:{en:"How smart is it, on tests people recognise?",th:"ฉลากแค่ไหน ในแบบทดสอบที่คนรู้จัก?"},
+  acc_lede:{en:"Vendor marketing numbers are impossible to compare. So we ran the same open suites everyone uses — grade-school math (GSM8K), code generation (HumanEval), and broad knowledge (MMLU). Subset sizes chosen for a ~1-hour run on one Mac.",
+            th:"ตัวเลขการตลาดของผู้ผลิตเทียบกันไม่ได้ เราเลยวิ่งชุดทดสอบเปิดเดียวกับที่ทุกคนใช้ — คณิตระดับประถม (GSM8K) เขียนโค้ด (HumanEval) และความรู้รอบตัว (MMLU)"},
+  priv_h:{en:"During a 24-second generation, zero model-related traffic",th:"ในการสร้างคำตอบ 24 วินาที ไม่มีการรับส่งข้อมูลจากโมเดลเลย"},
+  priv_lede:{en:"We can't <em>prove</em> \"offline\" with a passive probe (background apps always chatter), so we did the honest thing: measured every byte on the interface during inference vs an equal idle window, and listed <strong>which process sent each byte</strong>. None of them were the model.",
+             th:"เรายืนยัน \"ออฟไลน์\" ด้วยการวัดแบบ passive ไม่ได้ (แอปพื้นหลังส่งข้อมูลตลอด) เราเลยทำแบบตรงไปตรงมา: วัดทุกไบต์บนอินเทอร์เฟซระหว่าง inference เทียบกับช่วง idle เท่ากัน และ<strong>ระบุว่าโพรเซสไหนส่งแต่ละไบต์</strong> ไม่มีโพรเซสไหนเป็นของโมเดล"},
+  priv_box:{en:"Inference window: 63 KB out · 9 processes. Idle window: 46 KB out · 10 processes. Every process in both windows was an unrelated background app — <span class='green'>none was the model</span>. See the evidence →",
+             th:"ช่วง inference: ส่งออก 63 KB · 9 โพรเซส · ช่วง idle: 46 KB · 10 โพรเซส ทุกโพรเซสในสองช่วงเป็นแอปพื้นหลังที่ไม่เกี่ยวข้อง — <span class='green'>ไม่มีโมเดล</span>"},
+  use_h:{en:"A decision guide, not a score",th:"คู่มือตัดสินใจ ไม่ใช่แค่คะแนน"},
+  use_lede:{en:"Verdicts below are derived from the measured numbers above (speed, context, accuracy, privacy) — not vibes. Green = well-suited, amber = workable, red = not the right tool.",
+            th:"คำตัดสินด้านล่างมาจากตัวเลขที่วัดได้ด้านบน (ความเร็ว, context, ความแม่นยำ, ความเป็นส่วนตัว) ไม่ใช่ความรู้สึก เขียว=เหมาะมาก อำพัน=ใช้ได้ แดง=ไม่ใช่เครื่องมือที่เหมาะ"},
+  verd_h:{en:"The takeaway",th:"บทสรุป"},
+  verd1:{en:"A genuinely useful <em>local</em> model — not a GPT-4 replacement, and it shouldn't be judged as one. Its job is the one it's built for: fast, private, always-on assistance on your own machine.",
+          th:"โมเดล<em>ในเครื่อง</em>ที่ใช้งานได้จริง — ไม่ใช่ตัวแทนทดแทน GPT-4 และไม่ควรนำมาเทียบ หน้าที่ของมันคือสิ่งที่มันถูกออกแบบมา: ผู้ช่วยที่เร็ว เป็นส่วนตัว และพร้อมใช้บนเครื่องของคุณเอง"},
+  verd2:{en:"<span class='amber'>Strengths:</span> instant cold-ish start, ~0.4s warm first-token, perfect mid-context recall, and the strongest possible privacy story (on-device). <span class='amber'>Limits:</span> a ~4k context, ~71 tok/s structured-output decode, and accuracy suited to everyday tasks — not frontier reasoning.",
+          th:"<span class='amber'>จุดแข็ง:</span> เริ่มต้นเร็ว, first-token อุ่น ~0.4 วินาที, จำกลาง context ได้ครบ และความเป็นส่วนตัวระดับสูงสุด (ออนดีไวซ์) <span class='amber'>ขีดจำกัด:</span> context ~4k, decode ~71 tok/s, ความแม่นยำเหมาะกับงานประจำวัน ไม่ใช่การให้เหตุผลระดับแนวหน้า"},
+  meth_h:{en:"How to trust (and reproduce) this",th:"จะไว้วางใจ (และทำซ้ำ) อย่างไร"},
+  meth_list:{en:[
+    "<b>Spec-labeled.</b> Every number applies to the M3 Pro / 18GB / macOS 27.0 machine in the top strip. A different chip will differ.",
+    "<b>Regression, not stopwatch.</b> Prefill from ttft-vs-input slope; decode from wall-vs-output slope. Single-point \"tokens/sec\" is misleading and we don't report it.",
+    "<b>Open harness.</b> <span class='mono'>bench/run_all.py</span> re-runs everything. Datasets (GSM8K, HumanEval, MMLU) are downloaded and scored locally; licenses noted in the repo.",
+    "<b>Measured vs reference split.</b> Amber = we measured it on this Mac. Grey = vendor-stated marketing figures, included for scale, not for like-for-like comparison.",
+    "<b>\"3B\" unconfirmed.</b> Apple does not publish the parameter count; we don't assert it. Everything else is measured directly.",
+    "<b>Privacy is evidence, not proof.</b> We observed no model traffic; proving fully-offline needs the Wi-Fi-off test."
+  ],th:[
+    "<b>ระบุสเปกชัดเจน.</b> ทุกตัวเลขใช้กับเครื่อง M3 Pro / 18GB / macOS 27.0 ในแถบบน ชิปอื่นจะต่างออกไป",
+    "<b>ถดถอยเชิงเส้น ไม่ใช่จับเวลา.</b> Prefill จากความชัน ttft-vs-input, decode จากความชัน wall-vs-output \"tokens/sec\" แบบจุดเดียวทำให้เข้าใจผิด เราไม่รายงานแบบนั้น",
+    "<b>Harness เปิด.</b> <span class='mono'>bench/run_all.py</span> รันซ้ำได้ทั้งหมด ดาต้าเซต (GSM8K, HumanEval, MMLU) ดาวน์โหลดและตรวจในเครื่อง",
+    "<b>แยก วัดเอง vs อ้างอิง.</b> อำพัน=เราวัดบนเครื่องนี้ · เทา=ตัวเลขการตลาดของผู้ผลิต ใส่ไว้เป็นมาตราส่วน ไม่ใช่เทียบแบบเท่ากัน",
+    "<b>\"3B\" ไม่ยืนยัน.</b> Apple ไม่เปิดเผยจำนวนพารามิเตอร์ เราไม่ยืนยัน ส่วนอื่นวัดโดยตรงทั้งหมด",
+    "<b>ความเป็นส่วนตัวคือหลักฐาน ไม่ใช่ข้อพิสูจน์.</b> เราไม่พบการรับส่งข้อมูลของโมเดล การพิสูจน์ออฟไลน์เต็มรูปแบบต้องปิด Wi-Fi"
+  ]}
+};
+function setLang(L){
+  document.documentElement.lang=L;
+  document.querySelectorAll('[data-i18n]').forEach(e=>{ const k=e.getAttribute('data-i18n'); if(I18N[k]&&I18N[k][L]!=null) e.innerHTML=I18N[k][L]; });
+  document.querySelectorAll('[data-i18n-html]').forEach(e=>{ const k=e.getAttribute('data-i18n-html'); if(I18N[k]&&I18N[k][L]!=null) e.innerHTML=I18N[k][L]; });
+  const ml=document.querySelector('[data-i18n-list]'); if(ml&&I18N.meth_list[L]){ ml.innerHTML=I18N.meth_list[L].map(x=>'<li>'+x+'</li>').join(''); }
+  document.getElementById('btn-en').classList.toggle('on',L==='en');
+  document.getElementById('btn-th').classList.toggle('on',L==='th');
+  renderDynamic();
+}
+
+/* ---------- spec strip + kpis ---------- */
+function renderSpec(){
+  const s=DATA.spec, items=[
+    ['CHIP',s.chip],['MODEL',s.model],['CORES',s.cores],['MEMORY',s.ram],
+    ['OS',s.os+' · '+s.build],['FM CLI',s.fm.split('/').pop()+' · build '+s.fm_build]
+  ];
+  document.getElementById('specstrip').innerHTML=items.map(([k,v])=>
+    `<div class="specitem"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+}
+function renderKpis(){
+  const L=document.documentElement.lang||'en';
+  const lab={
+    ttft:{en:'WARM FIRST TOKEN',th:'โทเคนแรก (อุ่น)'},
+    pre:{en:'PREFILL · READ',th:'PREFILL · อ่าน'},
+    dec:{en:'DECODE · WRITE',th:'DECODE · เขียน'},
+    ctx:{en:'USABLE CONTEXT',th:'CONTEXT ที่ใช้ได้'}
+  };
+  const sub={
+    ttft:{en:'to first byte',th:'ถึงไบต์แรก'},
+    pre:{en:'reads your prompt',th:'อ่าน prompt'},
+    dec:{en:'writes the answer',th:'เขียนคำตอบ'},
+    ctx:{en:'tokens, fully recalled',th:'โทเคน ดึงได้ครบ'}
+  };
+  const warm=DATA.latency.warm_ttft_p50, pre=DATA.latency.prefill_tps, dec=DATA.latency.decode_tps, ctx=DATA.context.ceiling;
+  const cards=[
+    [`<span class="big">${warm}<span class="u">s</span></span>`, 'ttft', warm],
+    [`<span class="big">${pre}<span class="u">tok/s</span></span>`, 'pre', pre],
+    [`<span class="big">${dec}<span class="u">tok/s</span></span>`, 'dec', dec],
+    [`<span class="big">~${(ctx/1000).toFixed(1)}<span class="u">k</span></span>`, 'ctx', ctx]
+  ];
+  document.getElementById('kpis').innerHTML=cards.map(([b,k])=>
+    `<div class="kpi">${b}<div class="lab">${lab[k][L]||lab[k].en}</div><div class="sub">${sub[k][L]||sub[k].en}</div></div>`).join('');
+}
+
+/* ---------- scores ---------- */
+function renderScores(){
+  const g=DATA.suites.gsm8k, h=DATA.suites.humaneval, m=DATA.suites.mmlu;
+  const card=(tag,nm,val,of,n,pending)=>`<div class="score ${pending?'pending':''}">
+    <div class="tag">${tag}</div><div class="nm">${nm}</div>
+    <div class="pct">${pending?'—':val+'<span class="of">% / '+of+'</span>'}</div>
+    <div class="bar"><i style="width:${pending?0:val}%"></i></div>
+    <div class="n">n = ${n}</div></div>`;
+  document.getElementById('scores').innerHTML=
+    card('GSM8K','Grade-school math',(g.accuracy*100).toFixed(1),'% of '+g.n,g.n,g.accuracy==null)+
+    card('HumanEval','Code generation',(h.pass_at_1*100).toFixed(1),'% pass@1',h.n,h.pass_at_1==null)+
+    card('MMLU','Broad knowledge',(m.accuracy*100).toFixed(1),'% of '+m.n,m.n,m.accuracy==null);
+}
+
+/* ---------- charts ---------- */
+const AMBER='#e6a745', GREEN='#7fc97f', MUTE='#9aa097', DIM='#6b716a', LINE='#2c302a', CREAM='#f3efe4';
+function axis(g,scale,ticks,orient){
+  g.selectAll('line').data(ticks).join('line').attr('x1',d=>scale(d)).attr('x2',d=>scale(d))
+    .attr('y1',0).attr('y2',orient==='x'?320:-320).attr('stroke',LINE).attr('stroke-width',1).attr('opacity',.5);
+}
+function ctxChart(){
+  const el=document.getElementById('ctxChart'); el.innerHTML='';
+  const W=640,H=320,m={t:24,r:24,b:46,l:54};
+  const svg=d3.select(el).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+  const x=d3.scaleLog().domain([500,1.2e6]).range([m.l,W-m.r]);
+  const y=d3.scaleLinear().domain([0,105]).range([H-m.b,m.t]);
+  const refs=[['AFM (measured)',4037,AMBER,true],['Llama 3.2 3B',128000,MUTE,false],['GPT-4o',128000,MUTE,false],['Claude Sonnet 4',200000,MUTE,false],['Gemini 1.5 Pro',1000000,MUTE,false]];
+  // gridlines
+  [1e3,1e4,1e5,1e6].forEach(t=>svg.append('line').attr('x1',x(t)).attr('x2',x(t)).attr('y1',m.t).attr('y2',H-m.b).attr('stroke',LINE).attr('opacity',.5));
+  [25,50,75,100].forEach(t=>svg.append('line').attr('x1',m.l).attr('x2',W-m.r).attr('y1',y(t)).attr('y2',y(t)).attr('stroke',LINE).attr('opacity',.4));
+  // bars from 0 (left edge approx) to value
+  refs.forEach(([nm,v,c,me],i)=>{
+    const bx=m.l+4, bw=Math.max(2,x(v)-bx), by=y((i+1)*18)-5;
+    svg.append('rect').attr('x',bx).attr('y',by).attr('width',bw).attr('height',10).attr('rx',2).attr('fill',c).attr('opacity',me?1:.55);
+    svg.append('text').attr('x',bx+bw+8).attr('y',by+9).attr('fill',c).attr('font-family','JetBrains Mono').attr('font-size',11).text(nm+'  '+v.toLocaleString());
+  });
+  svg.append('g').attr('transform',`translate(0,${H-m.b})`).call(d3.axisBottom(x).ticks(4,t=>t>=1e6?(t/1e6)+'M':t>=1e3?(t/1e3)+'k':t).tickSize(0)).call(g=>g.select('.domain').remove());
+  svg.append('g').attr('transform',`translate(${m.l},0)`).call(d3.axisLeft(y).ticks(0).tickSize(0)).call(g=>g.select('.domain').attr('stroke',LINE));
+  svg.append('text').attr('x',W/2).attr('y',H-6).attr('text-anchor','middle').attr('fill',DIM).attr('font-family','JetBrains Mono').attr('font-size',10).text('context window (tokens, log scale)');
+}
+function prefillChart(){
+  const el=document.getElementById('preChart'); el.innerHTML='';
+  const W=300,H=240,m={t:18,r:16,b:38,l:42};
+  const svg=d3.select(el).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+  const pts=DATA.latency.prefill_points;
+  const x=d3.scaleLinear().domain([0,3200]).range([m.l,W-m.r]);
+  const y=d3.scaleLinear().domain([0,4]).range([H-m.b,m.t]);
+  const f=DATA.latency.prefill_fit;
+  [1,2,3].forEach(t=>svg.append('line').attr('x1',m.l).attr('x2',W-m.r).attr('y1',y(t)).attr('y2',y(t)).attr('stroke',LINE).attr('opacity',.4));
+  // fit line
+  const x0=0,x1=3200;
+  svg.append('line').attr('x1',x(x0)).attr('x2',x(x1)).attr('y1',y(f.intercept+f.slope*x0)).attr('y2',y(f.intercept+f.slope*x1)).attr('stroke',AMBER).attr('stroke-width',2).attr('stroke-dasharray','4 3');
+  svg.selectAll('c').data(pts).join('circle').attr('cx',d=>x(d.n)).attr('cy',d=>y(d.ttft)).attr('r',4).attr('fill',AMBER);
+  svg.append('g').attr('transform',`translate(0,${H-m.b})`).call(d3.axisBottom(x).ticks(4).tickSize(0)).call(g=>g.select('.domain').remove());
+  svg.append('g').attr('transform',`translate(${m.l},0)`).call(d3.axisLeft(y).ticks(4).tickSize(0)).call(g=>g.select('.domain').remove());
+  svg.append('text').attr('x',W/2).attr('y',H-4).attr('text-anchor','middle').attr('fill',DIM).attr('font-family','JetBrains Mono').attr('font-size',9).text('input tokens → ttft (s)');
+  svg.append('text').attr('x',W-m.r).attr('y',m.t+8).attr('text-anchor','end').attr('fill',AMBER).attr('font-family','Fraunces').attr('font-weight',700).attr('font-size',20).text(DATA.latency.prefill_tps+' tok/s');
+}
+function decodeChart(){
+  const el=document.getElementById('decChart'); el.innerHTML='';
+  const W=300,H=240,m={t:18,r:16,b:38,l:42};
+  const svg=d3.select(el).append('svg').attr('viewBox',`0 0 ${W} ${H}`);
+  const pts=DATA.latency.decode_points;
+  const f=DATA.latency.decode_fit;
+  const x=d3.scaleLinear().domain([0,1800]).range([m.l,W-m.r]);
+  const y=d3.scaleLinear().domain([0,26]).range([H-m.b,m.t]);
+  [6,12,18,24].forEach(t=>svg.append('line').attr('x1',m.l).attr('x2',W-m.r).attr('y1',y(t)).attr('y2',y(t)).attr('stroke',LINE).attr('opacity',.4));
+  const x0=0,x1=1800;
+  svg.append('line').attr('x1',x(x0)).attr('x2',x(x1)).attr('y1',y(Math.max(0,f.intercept+f.slope*x0))).attr('y2',y(f.intercept+f.slope*x1)).attr('stroke',GREEN).attr('stroke-width',2).attr('stroke-dasharray','4 3');
+  svg.selectAll('c').data(pts).join('circle').attr('cx',d=>x(d.tok)).attr('cy',d=>y(d.wall)).attr('r',4).attr('fill',GREEN);
+  svg.append('g').attr('transform',`translate(0,${H-m.b})`).call(d3.axisBottom(x).ticks(4).tickSize(0)).call(g=>g.select('.domain').remove());
+  svg.append('g').attr('transform',`translate(${m.l},0)`).call(d3.axisLeft(y).ticks(4).tickSize(0)).call(g=>g.select('.domain').remove());
+  svg.append('text').attr('x',W/2).attr('y',H-4).attr('text-anchor','middle').attr('fill',DIM).attr('font-family','JetBrains Mono').attr('font-size',9).text('output tokens → wall (s)');
+  svg.append('text').attr('x',W-m.r).attr('y',m.t+8).attr('text-anchor','end').attr('fill',GREEN).attr('font-family','Fraunces').attr('font-weight',700).attr('font-size',20).text(DATA.latency.decode_tps.toFixed(0)+' tok/s');
+}
+
+/* ---------- use-case matrix ---------- */
+function renderMatrix(){
+  const L=document.documentElement.lang||'en';
+  const T={
+    en:{tasks:['Summarise a 2-page doc','Draft an email / reply','Rewrite or tone-shift text','Extract structured data → JSON','Single-file code helpers','Long-document Q&A (>3k tok)','Frontier math / hard reasoning','Private / sensitive text']},
+    th:{tasks:['สรุปเอกสาร 2 หน้า','ร่างอีเมล/ตอบกลับ','แก้หรือปรับโทนข้อความ','ดึงข้อมูลเป็น JSON','ผู้ช่วยเขียนโค้ดไฟล์เดียว','ถามตอบเอกสารยาว (>3k tok)','คณิตศาสตร์ระดับสูง/ให้เหตุผล','ข้อความส่วนตัว/ละเอียดอ่อน']},
+    verdict:{en:{g:'GREAT',a:'OK',r:'NOPE'},th:{g:'เยี่ยม',a:'พอใช้',r:'ไม่เหมาะ'}}
+  };
+  const lang = T[L]?L:'en';
+  // verdicts: g/a/r with n evidence + confidence
+  const V=[
+    ['g','recall 3/3',4],['g','~967 prefill',4],['g','instruction',4],['a','JSON ok',3],['g','HumanEval',3],['r','~4k limit',4],['r','GSM8K sub',4],['g','on-device',5]
+  ];
+  const cls={g:'green',a:'amber',r:'red'};
+  let html=`<div class="hd">${L==='th'?'งาน':'Task'}</div>
+    <div class="hd">${L==='th'?'คำตัดสิน':'Verdict'}</div>
+    <div class="hd">evidence</div>
+    <div class="hd">${L==='th'?'ความมั่นใจ':'confidence'}</div>`;
+  T[lang].tasks.forEach((t,i)=>{
+    const [v,ev,n]=V[i];
+    const dots=Array.from({length:5},(_,k)=>`<span class="pill ${k<n?'cls':''}" style="${k<n?'':'opacity:.18'}"></span>`.replace('cls',cls[v])).join('');
+    html+=`<div class="task">${t}</div>
+      <div class="cell"><div class="dotrow"><span class="pill ${cls[v]}"></span><span class="verdict ${cls[v]}">${T.verdict[lang][v]}</span></div></div>
+      <div class="cell mono" style="color:var(--mute);font-size:11px">${ev}</div>
+      <div class="cell">${dots} <span class="n">n=${n}</span></div>`;
+  });
+  document.getElementById('matrix').innerHTML=html;
+}
+
+function renderDynamic(){ renderSpec(); renderKpis(); renderScores(); ctxChart(); prefillChart(); decodeChart(); renderMatrix();
+  const ex=DATA.privacy.excess; const kb=Math.round(ex/1024);
+  document.getElementById('privExcess').textContent=(kb>=0?'+':'')+kb+' KB';
+  document.getElementById('privExcess').style.color = Math.abs(kb)<25?GREEN:AMBER;
+}
+setLang('en');
+</script>
+</body>
+</html>
